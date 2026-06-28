@@ -1077,32 +1077,7 @@ class Component extends DCLogic {
       React.createElement('text',{x:60,y:76,textAnchor:'middle',fill:'#5a6378',fontSize:10,fontFamily:'IBM Plex Sans, sans-serif'},'ready'));
   }
 
-  // ── seed data (from LVRS Excel) ──────────────────────────────
-  seed(){
-    // [date, hour, day, dir, bias, type(S/P), entry, sr, sl, adxDir, adx, diP, diM, rsi, strong, maxR, mental[], note, shot]
-    const D = (date,hour,day,dir,bias,type,entry,sr,sl,adxDir,adx,diP,diM,rsi,strong,maxR,mental,note,shot)=>(
-      {date,hour,day,dir,bias,type,entry,sr,sl,adxDir,adx,diP,diM,rsi,strong,maxR,mental,note,shot});
-    return [
-      D('28 May','05:00','Wed','Sell','Bearish','P',1.16161,1.16241,1.16203,'Upward',36,11,31,'breaking S/R',true,6,['Calm','Focused'],'Clean break + retest at the level. Runner ran to TP3.',true),
-      D('28 May','15:45','Wed','Buy','Bullish','P',1.16241,1.16036,1.16189,'Upward',17,34,15,'breaking S/R',true,6,['Confident','Disciplined'],'London continuation. Strong DI spread.',true),
-      D('28 May','23:30','Wed','Buy','Neutral','S',1.16500,1.16448,1.16446,'Downward',38,24,13,'breaking SMA',false,1,['Anxious'],'Counter-bias scalp, only reached 1R then pulled back to BE.',false),
-      D('29 May','11:00','Thu','Sell','Bearish','S',1.16434,1.16571,1.16478,'Downward',23,21,29,'breaking SMA',false,4,['Calm','Patient'],'Textbook pullback short into resistance.',true),
-      D('02 Jun','08:00','Mon','Buy','Bullish','P',1.15820,1.15910,1.15760,'Upward',14,19,18,'entering over buy/sell',false,0,['Greedy','Impatient'],'FOMO entry before the open candle confirmed. Stopped immediately.',false),
-      D('02 Jun','09:30','Mon','Sell','Bearish','S',1.15940,1.16010,1.15988,'Downward',27,16,28,'breaking S/R',false,2,['Focused'],'Patient short, hit 2R target cleanly.',true),
-      D('03 Jun','09:00','Tue','Buy','Bullish','P',1.16120,1.15980,1.16070,'Upward',31,30,14,'breaking S/R',true,3,['Disciplined'],'Runner failed, closed remainder at TP1 (3R).',false),
-      D('04 Jun','11:45','Wed','Sell','Neutral','S',1.16380,1.16450,1.16420,'Flat',18,20,22,'breaking SMA',false,0,['Tired','Frustrated'],'Chop, no business trading a flat ADX regime.',false),
-      D('04 Jun','12:45','Wed','Buy','Bullish','P',1.16210,1.16060,1.16150,'Upward',34,33,12,'breaking S/R',true,6,['Confident','Calm'],'A+ setup. Full runner to TP2.',true),
-      D('05 Jun','17:00','Thu','Sell','Bearish','S',1.16640,1.16720,1.16695,'Downward',22,18,25,'breaking SMA',false,1,['Anxious'],'NY session fade, BE only.',false),
-      D('08 Jun','14:30','Sun','Buy','Bullish','P',1.16050,1.15920,1.16000,'Upward',26,28,17,'breaking S/R',false,4,['Focused','Patient'],'Solid TP1 hit, no runner conditions.',true),
-      D('11 Jun','17:30','Wed','Sell','Bearish','S',1.16890,1.16980,1.16955,'Downward',29,15,30,'breaking SMA',false,4,['Calm'],'Reached TP3 if there were no BE-at-1R rule.',true),
-      D('12 Jun','15:30','Thu','Buy','Bullish','P',1.16330,1.16190,1.16270,'Upward',37,35,11,'breaking S/R',true,6,['Confident','Disciplined'],'Reached TP3 easily, runner banked.',true),
-      D('15 Jun','18:45','Sun','Sell','Neutral','S',1.16710,1.16780,1.16752,'Flat',16,21,23,'breaking SMA',false,0,['Impatient','Frustrated'],'Level + buffer break had not happened — entry not per strategy. Hit SL then ran to 4R.',false),
-      D('17 Jun','10:00','Tue','Buy','Bullish','P',1.16180,1.16040,1.16120,'Upward',28,29,16,'breaking S/R',false,4,['Focused'],'Clean London long, TP1 banked.',true),
-      D('18 Jun','18:30','Wed','Sell','Bearish','P',1.16920,1.17010,1.16965,'Downward',33,13,33,'breaking S/R',true,6,['Greedy','Anxious'],'FOMO at the wrong hour — got lucky, full runner anyway. Process > outcome.',false),
-      D('23 Jun','08:15','Mon','Buy','Bullish','S',1.15760,1.15690,1.15715,'Upward',24,26,19,'breaking SMA',false,2,['Calm','Patient'],'Disciplined open, 2R banked.',true),
-      D('23 Jun','13:45','Mon','Sell','Neutral','S',1.15880,1.15950,1.15922,'Flat',17,22,24,'breaking SMA',false,0,['Tired'],'Forced a trade in a dead session. Loss.',false)
-    ];
-  }
+  seed(){ return []; }
 
   // ── LVRS simulation ──────────────────────────────────────────
   enrich(){

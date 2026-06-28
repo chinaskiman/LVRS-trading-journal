@@ -56,9 +56,9 @@ No `node_modules`, no bundler, no framework CLI. The only network request at run
 
 ---
 
-## Seed data
+## Getting started
 
-18 EURUSD trades (May–Jun 2026) are pre-loaded so the app is useful immediately. Import your own trades via **↧ Import** (`.xlsx` or `.csv`) or log them one-by-one with **＋ Log trade**. The seed data is replaced on import.
+The journal starts empty. Import your own trades via **↧ Import** (`.xlsx` or `.csv`) or log them one-by-one with **＋ Log trade**.
 
 ---
 
