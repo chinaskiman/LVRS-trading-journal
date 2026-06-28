@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0a0d14; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #232b3b; border-radius: 6px; border: 2px solid #0a0d14; }
+  ::-webkit-scrollbar-thumb:hover { background: #313c52; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes drawIn { from { stroke-dashoffset: 2000; } to { stroke-dashoffset: 0; } }
+  input::placeholder, textarea::placeholder { color: #3c4658; opacity: 1; }
+  input[type=number]::-webkit-inner-spin-button { opacity: .35; }
+</style>
+</helmet>
+<div style="display:flex; height:100vh; min-height:760px; width:100%; background:#0a0d14; color:#e6e9f0; font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:13px; overflow:hidden;">
+
+  <!-- SIDEBAR -->
+  <aside style="width:228px; flex-shrink:0; background:#0c1019; border-right:1px solid #1b2230; display:flex; flex-direction:column; padding:18px 14px;">
+    <div style="display:flex; align-items:center; gap:11px; padding:6px 8px 20px;">
+      <div style="width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#4d8dff,#2c5fd6); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14px; color:#fff; box-shadow:0 4px 14px rgba(77,141,255,.35);">L</div>
+      <div>
+        <div style="font-weight:600; font-size:14px; letter-spacing:-.2px;">LVRS</div>
+        <div style="font-size:10.5px; color:#5a6378; letter-spacing:.3px; text-transform:uppercase;">Trading Journal</div>
+      </div>
+    </div>
+    <nav style="display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="6">
+        <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+          <span style="{{ item.iconWrap }}">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+          <sc-if value="{{ item.badge }}" hint-placeholder-val="">
+            <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#5a6378;">{{ item.badge }}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <div style="margin-top:auto; padding:14px 10px; border-top:1px solid #1b2230;">
+      <div style="font-size:10px; color:#5a6378; text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px;">Account</div>
+      <div style="display:flex; align-items:baseline; gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:600; color:#e6e9f0;">{{ equityDisplay }}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:{{ netColor }};">{{ returnDisplay }}</span>
+        <span style="font-size:11px; color:#5a6378;">all-time</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main style="flex:1; display:flex; flex-direction:column; min-width:0; background:#0a0d14;">
+    <!-- TOPBAR -->
+    <header style="height:60px; flex-shrink:0; border-bottom:1px solid #1b2230; display:flex; align-items:center; gap:20px; padding:0 26px; background:#0b0e16;">
+      <div style="min-width:0;">
+        <div style="font-weight:600; font-size:16px; letter-spacing:-.3px;">{{ pageTitle }}</div>
+        <div style="font-size:11.5px; color:#5a6378; margin-top:1px;">{{ pageSubtitle }}</div>
+      </div>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:9px;">
+        <sc-for list="{{ topStats }}" as="s" hint-placeholder-count="4">
+          <div style="text-align:right; padding:0 14px; border-left:1px solid #1b2230;">
+            <div style="font-size:10px; color:#5a6378; text-transform:uppercase; letter-spacing:.3px;">{{ s.label }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; color:{{ s.color }}; margin-top:2px;">{{ s.value }}</div>
+          </div>
+        </sc-for>
+        <div style="display:flex; align-items:center; gap:7px; margin-left:8px;">
+          <button onClick="{{ onImport }}" style="display:flex; align-items:center; gap:6px; background:#0f1421; color:#9aa3b8; border:1px solid #232b3b; border-radius:7px; padding:9px 13px; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer;">↧ Import</button>
+          <div style="position:relative;">
+            <button onClick="{{ onToggleExport }}" style="display:flex; align-items:center; gap:6px; background:#0f1421; color:#9aa3b8; border:1px solid #232b3b; border-radius:7px; padding:9px 13px; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer;">↥ Export</button>
+            <sc-if value="{{ exportOpen }}" hint-placeholder-val="">
+              <div style="position:absolute; top:42px; right:0; width:208px; background:#0d1119; border:1px solid #232b3b; border-radius:10px; padding:6px; z-index:50; box-shadow:0 14px 40px rgba(0,0,0,.5);">
+                <div onClick="{{ onExportXlsx }}" style="display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:7px; cursor:pointer; font-size:12.5px; color:#cdd6ea;"><span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#3fd09a;">XLSX</span> Excel — full structure</div>
+                <div onClick="{{ onExportCsv }}" style="display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:7px; cursor:pointer; font-size:12.5px; color:#cdd6ea;"><span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#7e9bd4;">CSV</span> Comma-separated</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <button onClick="{{ onLogTrade }}" style="margin-left:4px; display:flex; align-items:center; gap:7px; background:#4d8dff; color:#fff; border:none; border-radius:7px; padding:9px 15px; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer; box-shadow:0 3px 12px rgba(77,141,255,.3);">＋ Log trade</button>
+      </div>
+    </header>
+
+    <!-- VIEW AREA -->
+    <div style="flex:1; overflow-y:auto; overflow-x:hidden;">
+      <div style="padding:24px 26px 56px;">
+
+        <!-- DASHBOARD -->
+        <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <!-- metric cards -->
+            <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px;">
+              <sc-for list="{{ metricCards }}" as="m" hint-placeholder-count="6">
+                <div style="background:#0f1421; border:1px solid #1b2230; border-radius:11px; padding:15px 16px;">
+                  <div style="font-size:10.5px; color:#5a6378; text-transform:uppercase; letter-spacing:.4px;">{{ m.label }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:23px; font-weight:600; color:{{ m.color }}; margin-top:9px; letter-spacing:-.5px;">{{ m.value }}</div>
+                  <div style="font-size:11px; color:#6a7488; margin-top:3px;">{{ m.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- equity + side -->
+            <div style="display:grid; grid-template-columns:1fr 300px; gap:14px; margin-top:14px;">
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                  <div>
+                    <div style="font-weight:600; font-size:13.5px;">Equity curve</div>
+                    <div style="font-size:11px; color:#5a6378; margin-top:1px;">{{ tradeCountLabel }} · simulated with BE-at-1R rule</div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#3fd09a;">{{ netDisplay }}</div>
+                </div>
+                <div style="position:relative; width:100%;">{{ equityChart }}</div>
+              </div>
+
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 18px; display:flex; flex-direction:column;">
+                <div style="font-weight:600; font-size:13.5px; margin-bottom:14px;">R-multiple distribution</div>
+                <sc-for list="{{ rDist }}" as="d" hint-placeholder-count="5">
+                  <div style="margin-bottom:13px;">
+                    <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:5px;">
+                      <span style="color:#9aa3b8;">{{ d.label }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; color:#6a7488;">{{ d.count }}</span>
+                    </div>
+                    <div style="height:7px; border-radius:4px; background:#1b2230; overflow:hidden;">
+                      <div style="height:100%; width:{{ d.pct }}; background:{{ d.color }}; border-radius:4px;"></div>
+                    </div>
+                  </div>
+                </sc-for>
+                <div style="margin-top:auto; padding-top:14px; border-top:1px solid #1b2230; display:flex; justify-content:space-between; align-items:baseline;">
+                  <span style="font-size:11.5px; color:#5a6378;">Expectancy</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:600; color:#4d8dff;">{{ expectancyDisplay }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- recent trades + setup performance -->
+            <div style="display:grid; grid-template-columns:1fr 360px; gap:14px; margin-top:14px;">
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 18px 13px;">
+                  <div style="font-weight:600; font-size:13.5px;">Recent trades</div>
+                  <span onClick="{{ goTrades }}" style="font-size:11.5px; color:#4d8dff; cursor:pointer;">View all →</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 78px 92px 70px 64px 78px; padding:0 18px 8px; font-size:10px; color:#5a6378; text-transform:uppercase; letter-spacing:.3px;">
+                  <span>Setup</span><span style="text-align:center;">Dir</span><span style="text-align:right;">Entry</span><span style="text-align:center;">Result</span><span style="text-align:right;">R</span><span style="text-align:right;">P&L</span>
+                </div>
+                <sc-for list="{{ recentTrades }}" as="t" hint-placeholder-count="7">
+                  <div onClick="{{ t.onClick }}" style="display:grid; grid-template-columns:1fr 78px 92px 70px 64px 78px; align-items:center; padding:10px 18px; border-top:1px solid #161c28; cursor:pointer; font-size:12px;">
+                    <div style="min-width:0;">
+                      <div style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.symbol }} · {{ t.typeShort }}</div>
+                      <div style="font-size:10.5px; color:#5a6378; font-family:'IBM Plex Mono',monospace;">{{ t.when }}</div>
+                    </div>
+                    <div style="text-align:center;"><span style="{{ t.dirStyle }}">{{ t.direction }}</span></div>
+                    <div style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#9aa3b8;">{{ t.entry }}</div>
+                    <div style="text-align:center;"><span style="{{ t.resultStyle }}">{{ t.result }}</span></div>
+                    <div style="text-align:right; font-family:'IBM Plex Mono',monospace; color:{{ t.rColor }};">{{ t.rDisplay }}</div>
+                    <div style="text-align:right; font-family:'IBM Plex Mono',monospace; color:{{ t.pnlColor }};">{{ t.pnlDisplay }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:16px 18px;">
+                <div style="font-weight:600; font-size:13.5px; margin-bottom:14px;">Setup performance</div>
+                <sc-for list="{{ setupPerf }}" as="s" hint-placeholder-count="2">
+                  <div style="padding:13px 0; border-bottom:1px solid #161c28;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:9px;">
+                      <span style="font-weight:500; font-size:12.5px;">{{ s.name }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:{{ s.pnlColor }};">{{ s.pnl }}</span>
+                    </div>
+                    <div style="display:flex; gap:16px; font-size:11px; color:#6a7488;">
+                      <span>{{ s.trades }} trades</span>
+                      <span>Win {{ s.winrate }}</span>
+                      <span>Exp {{ s.exp }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+                <div style="margin-top:14px; padding:13px 14px; background:#10182a; border:1px solid #1e2c47; border-radius:9px;">
+                  <div style="font-size:11px; color:#7e9bd4; line-height:1.5;">{{ insightText }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ROUTINE -->
+        <sc-if value="{{ isRoutine }}" hint-placeholder-val="">
+          <div id="view-routine">
+            <div style="display:grid; grid-template-columns:1fr 320px; gap:14px;">
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <sc-for list="{{ routineSections }}" as="sec" hint-placeholder-count="4">
+                  <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:6px 6px 8px;">
+                    <div style="font-weight:600; font-size:12px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; padding:13px 16px 9px;">{{ sec.title }}</div>
+                    <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="4">
+                      <div onClick="{{ it.onToggle }}" style="display:flex; align-items:center; gap:13px; padding:10px 16px; border-radius:8px; cursor:pointer;">
+                        <span style="{{ it.boxStyle }}">{{ it.mark }}</span>
+                        <span style="{{ it.labelStyle }}">{{ it.label }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:20px; display:flex; flex-direction:column; align-items:center;">
+                  <div style="font-weight:600; font-size:13.5px; align-self:flex-start; margin-bottom:14px;">Today's readiness</div>
+                  <div style="position:relative;">{{ routineRing }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#6a7488; margin-top:12px;">{{ routineDone }} / {{ routineTotal }} checks complete</div>
+                  <sc-if value="{{ routineReady }}" hint-placeholder-val="">
+                    <div style="margin-top:14px; width:100%; text-align:center; padding:10px; background:rgba(63,208,154,.12); border:1px solid rgba(63,208,154,.3); border-radius:8px; color:#3fd09a; font-size:12px; font-weight:600;">✓ Cleared to trade</div>
+                  </sc-if>
+                </div>
+                <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px; flex:1; display:flex; flex-direction:column;">
+                  <div style="font-weight:600; font-size:13.5px; margin-bottom:5px;">Session review</div>
+                  <div style="font-size:11.5px; color:#5a6378; margin-bottom:12px;">What did I execute well? What rule did I break?</div>
+                  <textarea value="{{ reflectionValue }}" onChange="{{ onReflection }}" placeholder="e.g. Took a clean PB+Break at London open, respected BE-at-1R. Broke rule by adding a FOMO trade at 13:45 — flagged in the log." style="flex:1; min-height:180px; width:100%; resize:none; background:#0a0d14; border:1px solid #1b2230; border-radius:9px; padding:13px; color:#cdd6ea; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; line-height:1.6; outline:none;"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <!-- TRADES -->
+        <sc-if value="{{ isTrades }}" hint-placeholder-val="">
+          <div id="view-trades">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+              <span style="font-size:10px; color:#5a6378; text-transform:uppercase; letter-spacing:.4px; margin-right:2px;">Period</span>
+              <sc-for list="{{ rangeFilters }}" as="f" hint-placeholder-count="6">
+                <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+              <sc-for list="{{ resultFilters }}" as="f" hint-placeholder-count="5">
+                <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+              <div style="width:1px; height:22px; background:#1b2230; margin:0 4px;"></div>
+              <sc-for list="{{ typeFilters }}" as="f" hint-placeholder-count="3">
+                <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+              <sc-if value="{{ showSymFilter }}" hint-placeholder-val="">
+                <div style="width:1px; height:22px; background:#1b2230; margin:0 4px;"></div>
+                <sc-for list="{{ symFilters }}" as="f" hint-placeholder-count="2">
+                  <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+                </sc-for>
+              </sc-if>
+            </div>
+            <div style="display:flex; align-items:center; gap:18px; margin-bottom:14px; padding:11px 16px; background:#0f1421; border:1px solid #1b2230; border-radius:11px;">
+              <div style="display:flex; align-items:baseline; gap:7px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:600; color:#e6e9f0;">{{ selSummary.count }}</span>
+                <span style="font-size:11.5px; color:#5a6378;">trades · {{ selSummary.label }}</span>
+              </div>
+              <div style="width:1px; height:20px; background:#1b2230;"></div>
+              <div style="display:flex; align-items:baseline; gap:7px;">
+                <span style="font-size:11px; color:#5a6378; text-transform:uppercase; letter-spacing:.3px;">Net</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:{{ selSummary.netColor }};">{{ selSummary.net }}</span>
+              </div>
+              <div style="display:flex; align-items:baseline; gap:7px;">
+                <span style="font-size:11px; color:#5a6378; text-transform:uppercase; letter-spacing:.3px;">Win rate</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:#cdd6ea;">{{ selSummary.wr }}</span>
+              </div>
+              <sc-if value="{{ selSummary.filtersActive }}" hint-placeholder-val="">
+                <button onClick="{{ selSummary.onClear }}" style="margin-left:auto; padding:6px 12px; border-radius:7px; font-size:11.5px; font-weight:500; cursor:pointer; border:1px solid #1b2230; background:transparent; color:#8b94a8;">✕ Clear filters</button>
+              </sc-if>
+            </div>
+            <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; overflow:hidden;">
+              <div style="display:grid; grid-template-columns:30px 86px 60px 82px 76px 76px 62px 68px 64px 60px 42px 60px 66px 72px; column-gap:7px; padding:11px 16px; font-size:10px; color:#5a6378; text-transform:uppercase; letter-spacing:.3px; background:#0c1019;">
+                <span>#</span><span>Date</span><span>Sym</span><span>Setup</span><span style="text-align:right;">Entry</span><span style="text-align:right;">SL</span><span style="text-align:right;">Risk</span><span>ADX</span><span>Regime</span><span>RSI</span><span style="text-align:right;">Max</span><span style="text-align:right;">Exit</span><span style="text-align:center;">Result</span><span style="text-align:right;">P&L</span>
+              </div>
+              <sc-for list="{{ tradeRows }}" as="t" hint-placeholder-count="12">
+                <div onClick="{{ t.onClick }}" style="{{ t.rowStyle }}">
+                  <span style="font-family:'IBM Plex Mono',monospace; color:#5a6378;">{{ t.num }}</span>
+                  <div style="min-width:0;"><div style="color:#cdd6ea;">{{ t.date }}</div><div style="font-size:10px; color:#5a6378; font-family:'IBM Plex Mono',monospace;">{{ t.hour }}</div></div>
+                  <span style="font-weight:500;">{{ t.symbol }}</span>
+                  <div style="min-width:0;"><div><span style="{{ t.dirStyle }}">{{ t.dir }}</span></div><div style="font-size:10px; color:#6a7488; margin-top:2px;">{{ t.setup }}</div></div>
+                  <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#9aa3b8;">{{ t.entry }}</span>
+                  <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#6a7488;">{{ t.sl }}</span>
+                  <div style="text-align:right;"><div style="font-family:'IBM Plex Mono',monospace; color:#9aa3b8;">{{ t.risk }}</div><div style="font-size:10px; color:#5a6378;">{{ t.riskPct }}</div></div>
+                  <span style="font-family:'IBM Plex Mono',monospace; color:#9aa3b8; font-size:11px;">{{ t.adx }}</span>
+                  <span style="font-size:11px; color:{{ t.regimeColor }};">{{ t.regime }}</span>
+                  <span style="font-size:10px; color:#7e8aa0;">{{ t.rsi }}</span>
+                  <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#8b94a8;">{{ t.maxR }}</span>
+                  <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:{{ t.exitColor }};">{{ t.exitR }}</span>
+                  <span style="text-align:center;"><span style="{{ t.resultStyle }}">{{ t.result }}</span></span>
+                  <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:{{ t.pnlColor }};">{{ t.pnl }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- DETAIL DRAWER -->
+            <sc-if value="{{ hasDrawer }}" hint-placeholder-val="">
+              <div onClick="{{ drawer.onClose }}" style="position:fixed; inset:0; background:rgba(6,8,13,.55); z-index:40;"></div>
+              <div style="position:fixed; top:0; right:0; bottom:0; width:440px; background:#0d1119; border-left:1px solid #1b2230; z-index:41; display:flex; flex-direction:column; box-shadow:-20px 0 50px rgba(0,0,0,.4);">
+                <div style="padding:20px 22px 16px; border-bottom:1px solid #1b2230;">
+                  <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                    <div>
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-weight:600; font-size:19px; letter-spacing:-.3px;">{{ drawer.symbol }}</span>
+                        <span style="{{ drawer.dirStyle }}">{{ drawer.dir }}</span>
+                        <span style="{{ drawer.resultStyle }}">{{ drawer.result }}</span>
+                        <sc-if value="{{ drawer.hasViolations }}" hint-placeholder-val=""><span style="{{ drawer.violationBadge }}">⚠ {{ drawer.violationCount }} rule break</span></sc-if>
+                      </div>
+                      <div style="font-size:12px; color:#5a6378; margin-top:5px; font-family:'IBM Plex Mono',monospace;">{{ drawer.when }}</div>
+                    </div>
+                    <div onClick="{{ drawer.onClose }}" style="width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8b94a8; border:1px solid #1b2230; font-size:15px;">✕</div>
+                  </div>
+                  <div style="display:flex; align-items:baseline; gap:10px; margin-top:14px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; color:{{ drawer.pnlColor }};">{{ drawer.pnl }}</span>
+                    <span style="font-size:11.5px; color:#6a7488;">{{ drawer.plan }}</span>
+                  </div>
+                </div>
+                <div style="flex:1; overflow-y:auto; padding:6px 22px 22px;">
+                  <sc-if value="{{ drawer.open }}" hint-placeholder-val="">
+                    <div style="margin-top:16px; padding:15px 16px; background:#10182a; border:1px solid #1e2c47; border-radius:11px;">
+                      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <span style="width:8px; height:8px; border-radius:50%; background:#4d8dff; box-shadow:0 0 8px #4d8dff;"></span>
+                        <span style="font-weight:600; font-size:13px; color:#cdd6ea;">Position is open</span>
+                      </div>
+                      <div style="font-size:11.5px; color:#8b94a8; line-height:1.5; margin-bottom:12px;">When the trade closes, enter the maximum R it reached. The LVRS engine applies the BE-at-1R rule and folds it into your stats.</div>
+                      <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">Max TP reached (R)</label>
+                      <input type="number" step="1" onChange="{{ drawer.onCloseTrade }}" placeholder="e.g. 6 — then the trade closes" style="width:100%; height:40px; background:#0a0d14; border:1px solid #2e3850; border-radius:8px; padding:0 13px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; outline:none;" />
+                    </div>
+                  </sc-if>
+                  <sc-for list="{{ drawer.sections }}" as="sec" hint-placeholder-count="3">
+                    <div style="margin-top:18px;">
+                      <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:8px;">{{ sec.title }}</div>
+                      <sc-for list="{{ sec.rows }}" as="r" hint-placeholder-count="6">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #141a26;">
+                          <span style="font-size:12px; color:#8b94a8;">{{ r.label }}</span>
+                          <span style="font-size:12.5px; font-family:'IBM Plex Mono',monospace; color:{{ r.color }};">{{ r.value }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <div style="margin-top:18px;">
+                    <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:8px;">Entry checklist · {{ drawer.chkSetupName }}</div>
+                    <div style="{{ drawer.chkBannerStyle }}"><span style="font-size:14px;">{{ drawer.chkBannerIcon }}</span><span>{{ drawer.chkBannerText }}</span></div>
+                    <sc-for list="{{ drawer.chkRows }}" as="c" hint-placeholder-count="7">
+                      <div style="{{ c.rowStyle }}"><span style="{{ c.iconStyle }}">{{ c.icon }}</span><span style="{{ c.labelStyle }}">{{ c.label }}</span><span style="{{ c.detailStyle }}">{{ c.detail }}</span></div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top:20px;">
+                    <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:10px;">Psychology</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                      <sc-for list="{{ drawer.mental }}" as="tag" hint-placeholder-count="2">
+                        <span style="padding:4px 11px; border-radius:20px; font-size:11.5px; background:#172033; border:1px solid #25304a; color:#a9b6d4;">{{ tag }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="margin-top:20px;">
+                    <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:10px;">Outcome note</div>
+                    <div style="font-size:12.5px; color:#bcc6dc; line-height:1.65; background:#0a0d14; border:1px solid #1b2230; border-radius:9px; padding:13px;">{{ drawer.note }}</div>
+                  </div>
+                  <div style="margin-top:20px;">
+                    <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:10px;">Chart screenshot</div>
+                    <div style="height:150px; border-radius:9px; border:1px dashed #2a3346; background:repeating-linear-gradient(45deg,#0c1019,#0c1019 9px,#0e131e 9px,#0e131e 18px); display:flex; align-items:center; justify-content:center;">
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#4a5468;">drop TradingView screenshot</span>
+                    </div>
+                  </div>
+                </div>
+                <div style="flex:0 0 auto; padding:14px 22px; border-top:1px solid #1b2230; display:flex; gap:9px; background:#0c1019;">
+                  <button onClick="{{ drawer.onEdit }}" style="flex:1; height:40px; border-radius:9px; background:#17233b; border:1px solid #2a3a5c; color:#cdd6ea; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;">Edit trade</button>
+                  <button onClick="{{ drawer.onDelete }}" style="flex:0 0 auto; padding:0 16px; height:40px; border-radius:9px; background:transparent; border:1px solid #3a2530; color:#e08a8a; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:13px; cursor:pointer;">Delete</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <!-- CALENDAR -->
+        <sc-if value="{{ isCalendar }}" hint-placeholder-val="">
+          <div id="view-calendar">
+            <div style="display:grid; grid-template-columns:1fr 280px; gap:14px;">
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                  <div style="font-weight:600; font-size:15px;">{{ calMonthLabel }}</div>
+                  <div style="display:flex; gap:8px;">
+                    <div onClick="{{ calPrev }}" style="width:30px; height:30px; border-radius:7px; border:1px solid #1b2230; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8b94a8;">‹</div>
+                    <div onClick="{{ calNext }}" style="width:30px; height:30px; border-radius:7px; border:1px solid #1b2230; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8b94a8;">›</div>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr) 84px; gap:7px; margin-bottom:8px;">
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Sun</div>
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Mon</div>
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Tue</div>
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Wed</div>
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Thu</div>
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Fri</div>
+                  <div style="font-size:10.5px; color:#5a6378; text-align:center;">Sat</div>
+                  <div style="font-size:10px; color:#5a6378; text-align:right; padding-right:4px;">Week</div>
+                </div>
+                <sc-for list="{{ calWeeks }}" as="wk" hint-placeholder-count="5">
+                  <div style="display:grid; grid-template-columns:repeat(7,1fr) 84px; gap:7px; margin-bottom:7px;">
+                    <sc-for list="{{ wk.days }}" as="d" hint-placeholder-count="7">
+                      <div style="aspect-ratio:1.15; border-radius:8px; background:{{ d.bg }}; border:1px solid {{ d.border }}; padding:7px 8px; display:flex; flex-direction:column;">
+                        <span style="font-size:11px; color:#6a7488; font-family:'IBM Plex Mono',monospace;">{{ d.day }}</span>
+                        <span style="margin-top:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:{{ d.textColor }};">{{ d.pnl }}</span>
+                        <span style="font-size:9.5px; color:#6a7488;">{{ d.n }}</span>
+                      </div>
+                    </sc-for>
+                    <div style="display:flex; align-items:center; justify-content:flex-end; padding-right:6px;">
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:{{ wk.totalColor }};">{{ wk.total }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:16px 18px;">
+                  <div style="font-weight:600; font-size:13.5px; margin-bottom:14px;">Month summary</div>
+                  <sc-for list="{{ calStats }}" as="s" hint-placeholder-count="4">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #161c28;">
+                      <span style="font-size:12px; color:#8b94a8;">{{ s.label }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; font-weight:600; color:{{ s.color }};">{{ s.value }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ calHasBest }}" hint-placeholder-val="">
+                  <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:16px 18px;">
+                      <div style="font-size:11px; color:#5a6378; text-transform:uppercase; letter-spacing:.4px;">{{ calBest.label }}</div>
+                      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:8px;">
+                        <span style="font-size:14px; font-weight:600;">{{ calBest.value }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:600; color:{{ calBest.color }};">{{ calBest.pnl }}</span>
+                      </div>
+                    </div>
+                    <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:16px 18px;">
+                      <div style="font-size:11px; color:#5a6378; text-transform:uppercase; letter-spacing:.4px;">{{ calWorst.label }}</div>
+                      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:8px;">
+                        <span style="font-size:14px; font-weight:600;">{{ calWorst.value }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:600; color:{{ calWorst.color }};">{{ calWorst.pnl }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <!-- ANALYTICS -->
+        <sc-if value="{{ isAnalytics }}" hint-placeholder-val="">
+          <div id="view-analytics">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+              <!-- by setup -->
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 20px;">
+                <div style="font-weight:600; font-size:13.5px; margin-bottom:14px;">Edge by setup</div>
+                <div style="display:grid; grid-template-columns:1fr 50px 56px 64px 50px; padding-bottom:9px; font-size:10px; color:#5a6378; text-transform:uppercase; letter-spacing:.3px;">
+                  <span>Setup</span><span style="text-align:right;">N</span><span style="text-align:right;">Win</span><span style="text-align:right;">Exp</span><span style="text-align:right;">PF</span>
+                </div>
+                <sc-for list="{{ anSetups }}" as="s" hint-placeholder-count="2">
+                  <div style="display:grid; grid-template-columns:1fr 50px 56px 64px 50px; align-items:center; padding:12px 0; border-top:1px solid #161c28;">
+                    <div><div style="font-weight:500; font-size:12.5px;">{{ s.name }}</div><div style="font-size:11px; color:{{ s.pnlColor }}; font-family:'IBM Plex Mono',monospace; margin-top:2px;">{{ s.pnl }}</div></div>
+                    <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#9aa3b8;">{{ s.n }}</span>
+                    <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#9aa3b8;">{{ s.winrate }}</span>
+                    <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#4d8dff;">{{ s.exp }}</span>
+                    <span style="text-align:right; font-family:'IBM Plex Mono',monospace; color:#9aa3b8;">{{ s.pf }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <!-- by regime -->
+              <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 20px;">
+                <div style="font-weight:600; font-size:13.5px; margin-bottom:16px;">Expectancy by ADX regime</div>
+                <sc-for list="{{ anRegime }}" as="r" hint-placeholder-count="4">
+                  <div style="margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                      <span style="color:#cdd6ea;">{{ r.name }} <span style="color:#5a6378; font-size:11px;">{{ r.n }}</span></span>
+                      <span style="font-family:'IBM Plex Mono',monospace; color:{{ r.expColor }};">{{ r.exp }}</span>
+                    </div>
+                    <div style="height:8px; border-radius:4px; background:#1b2230; overflow:hidden;">
+                      <div style="height:100%; width:{{ r.barW }}; background:{{ r.barColor }}; border-radius:4px;"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- psychology -->
+            <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 20px; margin-top:14px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:16px;">
+                <div style="font-weight:600; font-size:13.5px; white-space:nowrap;">Expectancy by mental state</div>
+                <div style="font-size:11px; color:#5a6378; white-space:nowrap;">R per trade · centered at 0</div>
+              </div>
+              <div style="font-size:11.5px; color:#7e9bd4; line-height:1.5; margin-bottom:18px; max-width:680px;">{{ anLeadInsight }}</div>
+              <sc-for list="{{ anPsych }}" as="p" hint-placeholder-count="8">
+                <div style="display:grid; grid-template-columns:118px 1fr 92px; align-items:center; gap:12px; padding:5px 0;">
+                  <span style="font-size:12.5px; color:#cdd6ea;">{{ p.tag }}</span>
+                  <div style="position:relative; height:23px;">
+                    <div style="position:absolute; left:50%; top:0; bottom:0; width:1px; background:#2a3346;"></div>
+                    <div style="{{ p.barStyle }}"></div>
+                  </div>
+                  <div style="text-align:right;"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:{{ p.color }};">{{ p.exp }}</span> <span style="font-size:10.5px; color:#5a6378;">{{ p.n }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- by day -->
+            <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:18px 20px; margin-top:14px;">
+              <div style="font-weight:600; font-size:13.5px; margin-bottom:16px;">P&L by day of week</div>
+              <div style="display:flex; gap:14px; align-items:flex-end;">
+                <sc-for list="{{ anDay }}" as="d" hint-placeholder-count="5">
+                  <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:8px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:{{ d.pnlColor }};">{{ d.pnl }}</span>
+                    <div style="width:100%; height:90px; display:flex; align-items:flex-end;">
+                      <div style="width:100%; height:{{ d.barW }}; min-height:4px; background:{{ d.barColor }}; border-radius:5px 5px 0 0; opacity:.85;"></div>
+                    </div>
+                    <span style="font-size:11px; color:#8b94a8;">{{ d.name }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <!-- SETTINGS -->
+        <sc-if value="{{ isSettings }}" hint-placeholder-val="">
+          <div id="view-settings">
+            <div style="display:grid; grid-template-columns:1fr 280px; gap:14px; align-items:start;">
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <sc-for list="{{ settingsGroups }}" as="g" hint-placeholder-count="5">
+                  <div style="background:#0f1421; border:1px solid #1b2230; border-radius:13px; padding:6px 20px 14px;">
+                    <div style="font-weight:600; font-size:12px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; padding:14px 0 4px;">{{ g.sec }}</div>
+                    <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+                      <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; padding:13px 0; border-top:1px solid #161c28;">
+                        <div style="min-width:0;">
+                          <div style="font-size:13px; font-weight:500; color:#e6e9f0;">{{ it.label }}</div>
+                          <div style="font-size:11.5px; color:#6a7488; margin-top:3px; line-height:1.4;">{{ it.desc }}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; background:#0a0d14; border:1px solid #232b3b; border-radius:8px; padding:0 11px; height:38px;">
+                          <span style="font-size:12px; color:#5a6378; font-family:'IBM Plex Mono',monospace;">{{ it.unit }}</span>
+                          <input type="number" value="{{ it.inputValue }}" step="{{ it.step }}" min="{{ it.min }}" onChange="{{ it.onInput }}" style="width:64px; background:transparent; border:none; outline:none; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; text-align:right;" />
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="position:sticky; top:0; display:flex; flex-direction:column; gap:14px;">
+                <div style="background:#0f1421; border:1px solid #1e2c47; border-radius:13px; padding:16px 18px;">
+                  <div style="font-weight:600; font-size:13px; margin-bottom:4px;">Live simulation impact</div>
+                  <div style="font-size:11px; color:#6a7488; margin-bottom:14px; line-height:1.4;">Every change re-runs all 18 logged trades through the LVRS engine.</div>
+                  <sc-for list="{{ settingsImpact }}" as="s" hint-placeholder-count="4">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-top:1px solid #161c28;">
+                      <span style="font-size:12px; color:#8b94a8;">{{ s.label }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; color:{{ s.color }};">{{ s.value }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <button onClick="{{ onResetSettings }}" style="width:100%; padding:11px; border-radius:9px; background:transparent; border:1px solid #232b3b; color:#9aa3b8; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; font-weight:500; cursor:pointer;">Reset to LVRS defaults</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- LOG TRADE MODAL -->
+  <sc-if value="{{ showForm }}" hint-placeholder-val="">
+    <div onClick="{{ fClose }}" style="position:fixed; inset:0; background:rgba(6,8,13,.66); z-index:60;"></div>
+    <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:880px; max-width:94vw; max-height:90vh; background:#0d1119; border:1px solid #1f283a; border-radius:16px; z-index:61; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.55); overflow:hidden;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #1b2230;">
+        <div>
+          <div style="font-weight:600; font-size:16px;">{{ fModalTitle }}</div>
+          <div style="font-size:11.5px; color:#5a6378; margin-top:2px;">LVRS journal · fields auto-calculate risk &amp; TP suggestion</div>
+        </div>
+        <div onClick="{{ fClose }}" style="width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8b94a8; border:1px solid #1b2230; font-size:16px;">✕</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 282px; min-height:0; flex:1;">
+        <div style="overflow-y:auto; padding:18px 22px 22px;">
+          <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:11px;">Setup &amp; entry</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px;">
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Date</label>
+              <input value="{{ form.date }}" onChange="{{ fset_date }}" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Open hour</label>
+              <input value="{{ form.hour }}" onChange="{{ fset_hour }}" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Symbol</label>
+              <input value="{{ form.symbol }}" onChange="{{ fset_symbol }}" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:14px;">
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">Direction</label>
+              <div style="display:flex; gap:7px;"><sc-for list="{{ dirOpts }}" as="o" hint-placeholder-count="2"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">Market bias</label>
+              <div style="display:flex; gap:7px;"><sc-for list="{{ biasOpts }}" as="o" hint-placeholder-count="3"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">Entry type</label>
+            <div style="display:flex; gap:7px;"><sc-for list="{{ typeOpts }}" as="o" hint-placeholder-count="2"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; margin-top:14px;">
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Entry price</label>
+              <input value="{{ form.entry }}" onChange="{{ fset_entry }}" type="number" step="0.00001" placeholder="1.16200" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">S/R level</label>
+              <input value="{{ form.sr }}" onChange="{{ fset_sr }}" type="number" step="0.00001" placeholder="1.16060" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Stop loss</label>
+              <input value="{{ form.sl }}" onChange="{{ fset_sl }}" type="number" step="0.00001" placeholder="1.16150" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">SL type</label>
+            <div style="display:flex; gap:7px;"><sc-for list="{{ slTypeOpts }}" as="o" hint-placeholder-count="2"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+          </div>
+
+          <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin:22px 0 11px;">Indicators (ADX / DI / RSI)</div>
+          <div>
+            <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">ADX direction</label>
+            <div style="display:flex; gap:7px;"><sc-for list="{{ adxDirOpts }}" as="o" hint-placeholder-count="3"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; margin-top:14px;">
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">ADX number</label>
+              <input value="{{ form.adx }}" onChange="{{ fset_adx }}" type="number" placeholder="28" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">DI+</label>
+              <input value="{{ form.diP }}" onChange="{{ fset_diP }}" type="number" placeholder="30" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">DI−</label>
+              <input value="{{ form.diM }}" onChange="{{ fset_diM }}" type="number" placeholder="14" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">RSI entry condition</label>
+            <div style="display:flex; gap:7px; flex-wrap:wrap;"><sc-for list="{{ rsiOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+          </div>
+
+          <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin:22px 0 11px;">Entry checklist</div>
+          <sc-if value="{{ isStdSetup }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-bottom:14px;">
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">Confirmation candle</label>
+              <div style="display:flex; gap:7px; flex-wrap:wrap;"><sc-for list="{{ candleOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+            </div>
+          </sc-if>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <sc-for list="{{ chkToggles }}" as="c" hint-placeholder-count="4">
+              <div onClick="{{ c.onClick }}" style="{{ c.style }}"><span style="{{ c.box }}">{{ c.mark }}</span><span>{{ c.label }}</span></div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin:22px 0 11px;">Result &amp; psychology</div>
+          <div style="display:grid; grid-template-columns:160px 1fr; gap:11px; align-items:start;">
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Max TP reached (R) <span style="color:#5a6378;">· optional</span></label>
+              <input value="{{ form.maxR }}" onChange="{{ fset_maxR }}" type="number" step="1" placeholder="blank if still open" style="width:100%; height:36px; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:0 11px; color:#e6e9f0; font-family:'IBM Plex Mono',monospace; font-size:13px; outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:6px;">Mental state</label>
+              <div style="display:flex; gap:7px; flex-wrap:wrap;"><sc-for list="{{ mentalOpts }}" as="o" hint-placeholder-count="6"><div onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</div></sc-for></div>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <label style="font-size:11px; color:#8b94a8; display:block; margin-bottom:5px;">Outcome note</label>
+            <textarea value="{{ form.note }}" onChange="{{ fset_note }}" placeholder="What happened? Did you follow the plan?" style="width:100%; min-height:64px; resize:vertical; background:#0a0d14; border:1px solid #232b3b; border-radius:7px; padding:10px 11px; color:#cdd6ea; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; line-height:1.55; outline:none;"></textarea>
+          </div>
+        </div>
+
+        <div style="border-left:1px solid #1b2230; background:#0b0e16; padding:18px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:4px;">Entry conditions</div>
+          <div style="font-size:11px; color:#5a6378; margin-bottom:13px; line-height:1.45;">Live check against your {{ clSetupName }} rules.</div>
+          <div style="{{ clBannerStyle }}"><span style="font-size:15px;">{{ clBannerIcon }}</span><span>{{ clBannerText }}</span></div>
+          <div style="margin-bottom:16px;">
+            <sc-for list="{{ clRows }}" as="c" hint-placeholder-count="7">
+              <div style="{{ c.rowStyle }}"><span style="{{ c.iconStyle }}">{{ c.icon }}</span><span style="{{ c.labelStyle }}">{{ c.label }}</span><span style="{{ c.detailStyle }}">{{ c.detail }}</span></div>
+            </sc-for>
+          </div>
+          <div style="font-size:11px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.5px; font-weight:600; margin-bottom:4px;">LVRS suggestion</div>
+          <div style="font-size:11px; color:#5a6378; margin-bottom:16px; line-height:1.45;">Calculated live from your inputs &amp; settings.</div>
+          <div style="background:#10182a; border:1px solid #1e2c47; border-radius:10px; padding:12px 13px; margin-bottom:12px;">
+            <div style="font-size:10.5px; color:#7e9bd4; text-transform:uppercase; letter-spacing:.4px;">Suggested TP plan</div>
+            <div style="font-size:12.5px; color:#cdd6ea; line-height:1.5; margin-top:5px;">{{ pvPlan }}</div>
+            <div style="font-size:11.5px; color:{{ pvStrongColor }}; margin-top:7px; font-weight:500;">● {{ pvStrong }}</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #161c28;">
+            <span style="font-size:12px; color:#8b94a8;">Risk %</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#9aa3b8;">{{ pvRiskPct }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #161c28;">
+            <span style="font-size:12px; color:#8b94a8;">Risk $</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#9aa3b8;">{{ pvRisk }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #161c28;">
+            <span style="font-size:12px; color:#8b94a8;">Distance from S/R</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#9aa3b8;">{{ pvDist }}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #161c28;">
+            <span style="font-size:12px; color:#8b94a8;">Simulated exit</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:{{ pvResultColor }};">{{ pvExit }}</span>
+          </div>
+          <div style="margin-top:14px; padding:14px; background:#0f1421; border:1px solid #1b2230; border-radius:10px; text-align:center;">
+            <div style="font-size:10.5px; color:#5a6378; text-transform:uppercase; letter-spacing:.4px;">{{ pvBoxLabel }}</div>
+            <div style="font-size:15px; font-weight:600; color:{{ pvResultColor }}; margin-top:6px;">{{ pvResult }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:{{ pvPnlColor }}; margin-top:6px;">{{ pvPnl }}</div>
+          </div>
+          <div style="margin-top:auto; padding-top:16px; display:flex; gap:9px;">
+            <button onClick="{{ fClose }}" style="padding:12px 16px; border-radius:9px; background:transparent; border:1px solid #232b3b; color:#9aa3b8; font-family:'IBM Plex Sans',sans-serif; font-weight:500; font-size:13px; cursor:pointer;">Cancel</button>
+            <button onClick="{{ fSave }}" style="{{ fSaveStyle2 }}">{{ fSaveLabel2 }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="">
+    <div style="{{ toastStyle }}">
+      <span style="font-size:15px;">{{ toastIcon }}</span>
+      <span>{{ toastText }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const settings = {
+      initialEquity:10000, stdRisk:0.005, pbRisk:0.01,
+      stdTP:2, pbTP1:3, runnerTP2:6, runnerPct:0.3,
+      adxWeak:20, adxBuilding:25, adxHealthy:40, strongDIDiff:15, beAtR:1
+    };
+    this.state = { view:'dashboard', settings, trades:this.seed(), selectedId:null,
+      routineChecks:{ p1:true,p2:true,p3:true,r1:true,r2:true,k1:true,k2:true }, routineReflection:'', calMonth:5, filterResult:'all', filterType:'all', filterRange:'all', filterSym:'all',
+      showForm:false, editingId:null, form:this.defaultForm() };
+  }
+
+  defaultForm(){
+    return { date:'24 Jun', hour:'09:00', day:'Tue', symbol:'EURUSD', dir:'Buy', bias:'Bullish', type:'P',
+      entry:'', sr:'', sl:'', slType:'ATR based', adxDir:'Upward', adx:'', diP:'', diM:'',
+      rsi:'breaking S/R', maxR:'', mental:[], note:'',
+      candle:'', chk:{ beyondZone:false, pullback:false, beyondLevel:false, divergence:false } };
+  }
+  setFormField(k,v){ this.setState(s=>({form:{...s.form,[k]:v}})); }
+  setFormChk(k){ this.setState(s=>({form:{...s.form, chk:{...s.form.chk, [k]:!s.form.chk[k]}}})); }
+
+  // ── Entry checklist (from user's Check-List.docx) ──
+  // Per-condition: ok=true passes. Manual confirms: undefined treated as met (e.g. imported
+  // history not captured at entry); explicit false = not met. Auto conditions always evaluated.
+  RSI_ALLOWED(){ return ['breaking S/R','entering over buy/sell','breaking SMA']; }
+  evaluateChecklist(o){
+    const type = o.type==='S' ? 'S' : 'P';
+    const entry=parseFloat(o.entry), sr=parseFloat(o.sr);
+    const distPct = (entry&&sr) ? Math.abs(entry-sr)/entry*100 : null;
+    const diP=parseFloat(o.diP), diM=parseFloat(o.diM);
+    const diOk = o.dir==='Sell' ? (diM>diP) : (diP>diM);
+    const rsiOk = this.RSI_ALLOWED().includes(o.rsi);
+    const chk = o.chk||{};
+    const man = v => v!==false; // undefined or true = met
+    const distFmt = distPct==null ? '—' : distPct.toFixed(3)+'%';
+    const diFmt = (isNaN(diP)||isNaN(diM)) ? '—' : (diP+' / '+diM);
+    const C=[];
+    C.push({label:'Close beyond zone', ok:man(chk.beyondZone), detail:'confirm', manual:true});
+    C.push({label:'Pullback toward zone', ok:man(chk.pullback), detail:'confirm', manual:true});
+    if(type==='S'){
+      C.push({label:'Confirmation candle set', ok: o.candle!=='' && o.candle!=null, detail:(o.candle||'none'), manual:false});
+      C.push({label:'Entry distance 0.05% – 0.10%', ok: distPct!=null && distPct>0.05 && distPct<0.10, detail:distFmt, manual:false});
+    } else {
+      C.push({label:'Standard-pullback conditions NOT met', ok: distPct!=null && distPct>=0.10, detail:distFmt+' ≥ 0.10%', manual:false});
+      C.push({label:'Close beyond latest created level', ok:man(chk.beyondLevel), detail:'confirm', manual:true});
+      C.push({label:'Entry distance 0.10% – 0.20%', ok: distPct!=null && distPct>0.10 && distPct<0.20, detail:distFmt, manual:false});
+      C.push({label:'ADX direction not Downward', ok: o.adxDir!=='Downward', detail:(o.adxDir||'—')+(o.adxDir==='Downward'?' → NO ENTRY':''), manual:false});
+    }
+    C.push({label:'DI condition = Divergence', ok:man(chk.divergence), detail:'confirm', manual:true});
+    C.push({label:'RSI: Breaking S/R, Entering OB/OS, or Breaking SMA', ok:rsiOk, detail:o.rsi||'—', manual:false});
+    C.push({label:(o.dir==='Sell'?'Sell: DI− > DI+':'Buy: DI+ > DI−'), ok:diOk, detail:diFmt, manual:false});
+    const fails=C.filter(c=>!c.ok);
+    return { conditions:C, failCount:fails.length, allPass:fails.length===0, violations:fails.map(c=>c.label) };
+  }
+  toggleFormMental(tag){ this.setState(s=>{const has=s.form.mental.includes(tag); const m=has?s.form.mental.filter(x=>x!==tag):[...s.form.mental,tag]; return {form:{...s.form,mental:m}};}); }
+  computeStrong(diP,diM,rsi,type){ if(type!=='P')return false; const s=this.state.settings; const d=Math.abs((+diP||0)-(+diM||0)); return d>=s.strongDIDiff && (rsi==='entering over buy/sell'||rsi==='breaking S/R'); }
+
+  // ── Excel / CSV import + export (matches uploaded LVRS structure) ──
+  static get COLS(){ return ['Trade ID','Date','Open Hour','Day Name','Symbol','Direction','Market Bias','Entry Type','Entry Price','S/R Level','Entry Distance from S/R','Entry Distance from S/R %','SL Price','SL type','Risk %','Risk $','ADX Direction','ADX Number','ADX Regime','DI+','DI-','DI Difference','DI State','RSI Entry Condition','Strong PB+Break?','Suggested TP Plan','TP1 R','TP2 R','Runner %','If Runner Fails Close At R','Planned Weighted R','Max TP Reached R','Simulated Exit R','Trade Result','Commission','Swap Fee','Close Hour','Close Date','Duration (15 min candle)','PnL $','Equity','Mental State','Peak Equity','Drawdown','Daily PnL','Outcome note','Confirmation Candle']; }
+
+  parseDateCell(s){
+    s=String(s||'').trim();
+    const MON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+    const NAME=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let m=s.match(/(\d{1,2})[-\/\s]([a-z]{3})[a-z]*[-\/\s](\d{4})(?:[-\sT]+(\d{1,2}:\d{2}))?/i);
+    if(m){ const d=+m[1], mon=MON[m[2].toLowerCase()]??0, yr=+m[3], hour=(m[4]||'09:00'); const dt=new Date(yr,mon,d);
+      return { date:d+' '+NAME[mon], hour:hour.length===4?'0'+hour:hour, day:DAY[dt.getDay()] }; }
+    return { date:s||'—', hour:'09:00', day:'Mon' };
+  }
+
+  triggerImport(){
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='.xlsx,.xls,.csv';
+    inp.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.importFile(f); };
+    inp.click();
+  }
+
+  async importFile(file){
+    try{
+      const io=await import('./xlsx-io.js');
+      const matrix=await io.readSpreadsheet(file);
+      // locate header row
+      let h=-1;
+      for(let i=0;i<Math.min(matrix.length,12);i++){ const j=(matrix[i]||[]).join('|').toLowerCase(); if(j.includes('entry price')&&j.includes('s/r level')){ h=i; break; } }
+      if(h<0) throw new Error('Could not find the LVRS header row (need columns like “Entry Price” and “S/R Level”).');
+      const header=(matrix[h]||[]).map(x=>String(x).trim().toLowerCase());
+      const ix=n=>header.indexOf(n.toLowerCase());
+      const C={date:ix('Date'),hour:ix('Open Hour'),day:ix('Day Name'),sym:ix('Symbol'),dir:ix('Direction'),bias:ix('Market Bias'),type:ix('Entry Type'),entry:ix('Entry Price'),sr:ix('S/R Level'),sl:ix('SL Price'),slType:ix('SL type'),adxDir:ix('ADX Direction'),adx:ix('ADX Number'),diP:ix('DI+'),diM:ix('DI-'),rsi:ix('RSI Entry Condition'),maxR:ix('Max TP Reached R'),mental:ix('Mental State'),note:ix('Outcome note'),candle:ix('Confirmation Candle')};
+      const g=(row,k)=>C[k]>=0?String(row[C[k]]??'').trim():'';
+      const norm=(v,d)=>{ const t=String(v||'').trim(); return t?t.charAt(0).toUpperCase()+t.slice(1).toLowerCase():d; };
+      const trades=[];
+      for(let i=h+1;i<matrix.length;i++){
+        const row=matrix[i]||[]; const entry=parseFloat(g(row,'entry'));
+        if(isNaN(entry)) continue;
+        const dc=this.parseDateCell(g(row,'date'));
+        const typeRaw=g(row,'type').toLowerCase();
+        const type=(typeRaw.includes('break')||typeRaw==='p')?'P':'S';
+        const rsi=g(row,'rsi')||'breaking S/R';
+        const diP=parseFloat(g(row,'diP'))||0, diM=parseFloat(g(row,'diM'))||0;
+        const maxRraw=g(row,'maxR');
+        const mentalRaw=g(row,'mental');
+        const candleRaw=g(row,'candle');
+        trades.push({
+          date: C.hour>=0&&g(row,'hour')?dc.date:dc.date, hour: (C.hour>=0&&g(row,'hour'))?g(row,'hour'):dc.hour,
+          day: (C.day>=0&&g(row,'day'))?g(row,'day'):dc.day,
+          symbol: g(row,'sym')||'EURUSD', dir: norm(g(row,'dir'),'Buy')==='Sell'?'Sell':'Buy',
+          bias: norm(g(row,'bias'),'Neutral'), type,
+          entry, sr: parseFloat(g(row,'sr'))||entry, sl: parseFloat(g(row,'sl'))||entry,
+          slType: g(row,'slType')||'ATR based', adxDir: norm(g(row,'adxDir'),'Flat'),
+          adx: parseFloat(g(row,'adx'))||0, diP, diM, rsi,
+          strong: this.computeStrong(diP,diM,rsi,type),
+          maxR: (maxRraw===''||isNaN(parseFloat(maxRraw)))?'':parseFloat(maxRraw),
+          mental: mentalRaw?mentalRaw.split(/[,;]/).map(x=>x.trim()).filter(Boolean):[],
+          note: g(row,'note')||'—', shot:false,
+          candle: candleRaw||'' /* imported chk undefined → manual conditions treated as met */
+        });
+      }
+      if(!trades.length) throw new Error('No trade rows found below the header.');
+      this.setState({ trades, view:'trades', selectedId:null, importMsg:{ok:true, text:'Imported '+trades.length+' trades from '+file.name} });
+      this._toastTimer&&clearTimeout(this._toastTimer); this._toastTimer=setTimeout(()=>this.setState({importMsg:null}),4200);
+    }catch(err){
+      this.setState({ importMsg:{ok:false, text:'Import failed: '+(err.message||err)} });
+      this._toastTimer&&clearTimeout(this._toastTimer); this._toastTimer=setTimeout(()=>this.setState({importMsg:null}),6000);
+    }
+  }
+
+  excelDate(t){ const [d,mon]=String(t.date||'').split(' '); return (d||'1')+'-'+String(mon||'jan').toLowerCase()+'-2026-'+(t.hour||'09:00'); }
+
+  tradeToRow(t,i){
+    const s=this.state.settings; const r5=v=>Math.round(v*100000)/100000; const r2=v=>Math.round(v*100)/100;
+    const diState = (t.dir==='Buy'? t.diP>t.diM : t.diM>t.diP) ? 'Convergence' : 'Divergence';
+    const tp1 = t.isStd ? s.stdTP : s.pbTP1;
+    const tp2 = (!t.isStd && t.strong) ? s.runnerTP2 : '';
+    const runnerPct = (!t.isStd && t.strong) ? r2(s.runnerPct*100) : '';
+    const ifFail = (!t.isStd && t.strong) ? s.pbTP1 : '';
+    return [
+      i+1, this.excelDate(t), t.hour, t.day, t.symbol, t.dir, t.bias,
+      t.isStd?'Standard pullback':'Pullback and Breakout',
+      r5(t.entry), r5(t.sr), r5(t.dist), r2(t.distPct), r5(t.sl), t.slType,
+      r2(t.riskPct*100), r2(t.riskUSD), t.adxDir, t.adx, t.regime, t.diP, t.diM, t.diDiff, diState,
+      t.rsi, t.strong?'Yes':'No', t.plan, tp1, tp2, runnerPct, ifFail, r2(t.plannedWR),
+      t.open?'':t.maxR, t.open?'':r2(t.exitR), t.open?'Open':t.result, '', '', '', '', '',
+      t.open?'':r2(t.pnl), t.open?'':r2(t.equity), (t.mental||[]).join(', '),
+      t.open?'':r2(t.peak), t.open?'':r2(t.dd), '', t.note==='—'?'':t.note, t.candle||''
+    ];
+  }
+
+  buildMatrix(){
+    const tr=this.enrich(); const title=new Array(46).fill(''); title[0]='LVRS Trading Journal with TP Suggestion + BE at 1R Rule';
+    const rows=[title, Component.COLS]; tr.forEach((t,i)=>rows.push(this.tradeToRow(t,i))); return rows;
+  }
+
+  async exportFile(kind){
+    try{
+      const io=await import('./xlsx-io.js'); const matrix=this.buildMatrix();
+      const stamp=new Date().toISOString().slice(0,10);
+      const blob = kind==='csv' ? io.writeCsv(matrix) : io.writeXlsx(matrix,'LVRS Journal');
+      const name='LVRS Journal '+stamp+(kind==='csv'?'.csv':'.xlsx');
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+      this.setState({ exportOpen:false, importMsg:{ok:true, text:'Exported '+(matrix.length-2)+' trades → '+name} });
+      this._toastTimer&&clearTimeout(this._toastTimer); this._toastTimer=setTimeout(()=>this.setState({importMsg:null}),4200);
+    }catch(err){ this.setState({ exportOpen:false, importMsg:{ok:false, text:'Export failed: '+(err.message||err)} }); }
+  }
+
+  previewTrade(f){
+    const s=this.state.settings; const eq=this.metrics().endEq;
+    const isStd=f.type==='S';
+    const riskPct=isStd?s.stdRisk:s.pbRisk;
+    const riskUSD=eq*riskPct;
+    const baseTP=isStd?s.stdTP:s.pbTP1;
+    const strong=this.computeStrong(f.diP,f.diM,f.rsi,f.type);
+    const entry=parseFloat(f.entry), sr=parseFloat(f.sr);
+    const dist=(entry&&sr)?Math.abs(entry-sr):0;
+    const distPct=(entry&&sr)?(dist/entry*100):0;
+    const plannedWR=(!isStd&&strong)?(s.runnerPct*s.runnerTP2+(1-s.runnerPct)*s.pbTP1):baseTP;
+    let plan; if(isStd)plan='Standard pullback · TP '+s.stdTP+'R'; else if(strong)plan='PB+Break · TP1 '+s.pbTP1+'R → runner '+s.runnerTP2+'R ('+Math.round(s.runnerPct*100)+'%)'; else plan='PB+Break · TP '+s.pbTP1+'R';
+    const hasR=f.maxR!==''&&f.maxR!=null&&!isNaN(parseFloat(f.maxR));
+    let exitR=null,result='Open';
+    if(hasR){ const maxR=parseFloat(f.maxR);
+      if(maxR<s.beAtR){exitR=-1;result='Loss';}
+      else if(maxR<baseTP){exitR=0;result='BE';}
+      else {result='Win'; if(isStd)exitR=s.stdTP; else if(!strong)exitR=s.pbTP1; else exitR=(maxR>=s.runnerTP2)?(s.runnerPct*s.runnerTP2+(1-s.runnerPct)*s.pbTP1):s.pbTP1;}
+    }
+    const pnl=exitR==null?null:exitR*riskUSD;
+    return {riskPct,riskUSD,dist,distPct,plannedWR,strong,plan,exitR,result,pnl,hasR};
+  }
+
+  formValid(f){ return ['entry','sr','sl','adx','diP','diM'].every(k=>String(f[k]).trim()!==''&&!isNaN(parseFloat(f[k]))); }
+
+  closeTrade(id, maxR){ this.setState(s=>({trades:s.trades.map((t,i)=>i===id?{...t, maxR:maxR}:t)})); }
+  // (editTrade / deleteTrade defined above)
+
+  saveForm(){
+    const f=this.state.form;
+    if(!this.formValid(f))return;
+    const raw={ date:f.date, hour:f.hour, day:f.day, symbol:f.symbol, dir:f.dir, bias:f.bias, type:f.type,
+      entry:parseFloat(f.entry), sr:parseFloat(f.sr), sl:parseFloat(f.sl), slType:f.slType,
+      adxDir:f.adxDir, adx:parseFloat(f.adx), diP:parseFloat(f.diP), diM:parseFloat(f.diM),
+      rsi:f.rsi, strong:this.computeStrong(f.diP,f.diM,f.rsi,f.type), maxR:parseFloat(f.maxR),
+      mental:f.mental.slice(), note:f.note||'—', shot:false,
+      candle:f.candle, chk:{...f.chk} };
+    raw.violations=this.evaluateChecklist(raw).violations;
+    this.setState(s=>{
+      if(s.editingId!=null){
+        const trades=s.trades.map((t,i)=>i===s.editingId?raw:t);
+        return { trades, showForm:false, editingId:null, view:'trades', selectedId:s.editingId, form:this.defaultForm() };
+      }
+      return { trades:[...s.trades, raw], showForm:false, view:'trades', selectedId:s.trades.length, form:this.defaultForm() };
+    });
+  }
+
+  editTrade(id){
+    const t=this.state.trades[id];
+    const hasR=!(t.maxR===null||t.maxR===undefined||t.maxR===''||isNaN(t.maxR));
+    this.setState({ showForm:true, editingId:id, selectedId:null, form:{
+      date:t.date, hour:t.hour, day:t.day, symbol:t.symbol||'EURUSD', dir:t.dir, bias:t.bias, type:t.type,
+      entry:String(t.entry), sr:String(t.sr), sl:String(t.sl), slType:t.slType||'ATR based',
+      adxDir:t.adxDir, adx:String(t.adx), diP:String(t.diP), diM:String(t.diM), rsi:t.rsi,
+      maxR:hasR?String(t.maxR):'', mental:(t.mental||[]).slice(), note:t.note==='—'?'':(t.note||''),
+      candle:t.candle||'', chk:{ beyondZone:false, pullback:false, beyondLevel:false, divergence:false, ...(t.chk||{}) } } });
+  }
+
+  deleteTrade(id){ this.setState(s=>({ trades:s.trades.filter((t,i)=>i!==id), selectedId:null })); }
+
+  seg(key, options){ return options.map(([val,label])=>({label, onClick:()=>this.setFormField(key,val), style:this.segStyle(this.state.form[key]===val)})); }
+  segStyle(active){ return 'padding:8px 14px; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; border:1px solid '+(active?'#3a4a6b':'#1b2230')+'; background:'+(active?'#17233b':'#0a0d14')+'; color:'+(active?'#cdd6ea':'#8b94a8')+';'; }
+
+  formData(){
+    const f=this.state.form;
+    const p=this.previewTrade(f);
+    const mentalList=['Calm','Focused','Confident','Disciplined','Patient','Anxious','Fearful','Greedy','Impatient','Frustrated','Tired'];
+    const handlers={};
+    ['date','hour','symbol','entry','sr','sl','adx','diP','diM','maxR','note'].forEach(k=>handlers['fset_'+k]=(e)=>this.setFormField(k,e.target.value));
+    const resColor=p.result==='Win'?'#3fd09a':p.result==='Loss'?'#f06a6a':p.result==='BE'?'#d6a85b':'#8b94a8';
+    return {
+      ...handlers, form:f, showForm:this.state.showForm,
+      fOpen:()=>this.setState({showForm:true, editingId:null}), fClose:()=>this.setState({showForm:false, editingId:null, form:this.defaultForm()}),
+      fSave:()=>this.saveForm(), fValid:this.formValid(f),
+      fIsEdit:this.state.editingId!=null, fModalTitle:this.state.editingId!=null?'Edit trade':'Log new trade', fSaveLabel:this.state.editingId!=null?'Update trade':'Save trade',
+      fSaveStyle:'flex:1; padding:12px; border-radius:9px; border:none; font-family:\'IBM Plex Sans\',sans-serif; font-weight:600; font-size:13px; cursor:'+(this.formValid(f)?'pointer':'not-allowed')+'; background:'+(this.formValid(f)?'#4d8dff':'#1b2538')+'; color:'+(this.formValid(f)?'#fff':'#5a6378')+';'+(this.formValid(f)?'box-shadow:0 3px 12px rgba(77,141,255,.3);':''),
+      dirOpts:this.seg('dir',[['Buy','Buy'],['Sell','Sell']]),
+      typeOpts:this.seg('type',[['S','Standard pullback'],['P','Pullback + Breakout']]),
+      biasOpts:this.seg('bias',[['Bullish','Bullish'],['Bearish','Bearish'],['Neutral','Neutral']]),
+      adxDirOpts:this.seg('adxDir',[['Upward','Upward'],['Downward','Downward'],['Flat','Flat']]),
+      slTypeOpts:this.seg('slType',[['ATR based','ATR based'],['BOC (before opening candle)','Before opening candle']]),
+      candleOpts:this.seg('candle',[['Engulf','Engulf'],['Standard','Standard'],['Pin bar','Pin bar'],['Marubozu','Marubozu']]),
+      isStdSetup:f.type==='S',
+      rsiOpts:this.seg('rsi',[['entering over buy/sell','Entering over buy/sell'],['exiting over buy/sell','Exiting over buy/sell'],['breaking SMA','Breaking SMA'],['breaking S/R','Breaking S/R']]),
+      mentalOpts:mentalList.map(tag=>({label:tag, onClick:()=>this.toggleFormMental(tag), style:'padding:6px 12px; border-radius:20px; font-size:11.5px; cursor:pointer; border:1px solid '+(f.mental.includes(tag)?'#3a4a6b':'#232b3b')+'; background:'+(f.mental.includes(tag)?'#17233b':'transparent')+'; color:'+(f.mental.includes(tag)?'#a9b6d4':'#8b94a8')+';'})),
+      // preview
+      pvRisk:this.money2(p.riskUSD), pvRiskPct:(p.riskPct*100).toFixed(2)+'%',
+      pvDist:p.dist?(p.dist.toFixed(5)+'  ·  '+p.distPct.toFixed(3)+'%'):'—',
+      pvStrong:p.strong?'Strong setup':'Standard filters', pvStrongColor:p.strong?'#3fd09a':'#8b94a8',
+      pvPlan:p.plan, pvResult:p.result, pvResultColor:p.hasR?resColor:'#4d8dff',
+      pvBoxLabel:p.hasR?'Projected result':'Planned target',
+      pvExit:p.exitR==null?'—':this.rfmt(p.exitR),
+      pvPnl:p.hasR?(p.pnl==null?'—':this.money2(p.pnl)):(this.rfmt(p.plannedWR)),
+      pvPnlColor:p.hasR?(p.pnl==null?'#8b94a8':p.pnl>=0?'#3fd09a':'#f06a6a'):'#4d8dff',
+      // ── entry checklist (live) ──
+      ...(()=>{ const cl=this.evaluateChecklist(f);
+        const chk=f.chk||{};
+        const mkChk=(key,label)=>({label, onClick:()=>this.setFormChk(key), active:!!chk[key],
+          style:'display:flex; align-items:center; gap:8px; padding:9px 11px; border-radius:8px; cursor:pointer; font-size:12px; border:1px solid '+(chk[key]?'#2a6f4f':'#232b3b')+'; background:'+(chk[key]?'#0e2017':'#0a0d14')+'; color:'+(chk[key]?'#bfe7d4':'#9aa3b8')+';',
+          box:'width:17px; height:17px; flex:0 0 auto; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; border:1px solid '+(chk[key]?'#3fd09a':'#3a4456')+'; background:'+(chk[key]?'#1f8a5b':'transparent')+';',
+          mark:chk[key]?'✓':'' });
+        const toggles=[ mkChk('beyondZone','Close beyond zone'), mkChk('pullback','Pullback toward zone') ];
+        if(f.type==='P') toggles.push(mkChk('beyondLevel','Close beyond latest created level'));
+        toggles.push(mkChk('divergence','DI condition = Divergence'));
+        const clRows=cl.conditions.map(c=>({label:c.label, detail:c.detail,
+          icon:c.ok?'✓':'✕', iconStyle:'width:18px;height:18px;flex:0 0 auto;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;background:'+(c.ok?'#1f8a5b':'#c0392b')+';',
+          rowStyle:'display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #141a26;',
+          labelStyle:'flex:1;font-size:11.5px;color:'+(c.ok?'#cdd6ea':'#f0a0a0')+';',
+          detailStyle:'font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;color:'+(c.ok?'#7e8aa0':'#e08a8a')+';' }));
+        const setupName=f.type==='S'?'Standard Pullback':'Pullback & Breakout';
+        return {
+          chkToggles:toggles, clRows, clFailCount:cl.failCount, clAllPass:cl.allPass, clSetupName:setupName,
+          clBannerStyle:'display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:9px;margin-bottom:13px;font-size:12.5px;font-weight:600;border:1px solid '+(cl.allPass?'#1f5d40':'#7a2230')+';background:'+(cl.allPass?'#0e2017':'#241015')+';color:'+(cl.allPass?'#6fe0b0':'#ff8a8a')+';',
+          clBannerIcon:cl.allPass?'✓':'⚠',
+          clBannerText:cl.allPass?('All entry conditions met · '+setupName):(cl.failCount+' condition'+(cl.failCount>1?'s':'')+' NOT met · '+setupName),
+          fSaveLabel2: cl.allPass ? (this.state.editingId!=null?'Update trade':'Save trade') : (this.state.editingId!=null?'Update anyway':'Log anyway'),
+          fSaveDanger: !cl.allPass,
+          fSaveStyle2:'flex:1; padding:12px; border-radius:9px; border:none; font-family:\'IBM Plex Sans\',sans-serif; font-weight:600; font-size:13px; cursor:'+(this.formValid(f)?'pointer':'not-allowed')+'; background:'+(!this.formValid(f)?'#1b2538':(cl.allPass?'#4d8dff':'#c0392b'))+'; color:'+(this.formValid(f)?'#fff':'#5a6378')+';'+(this.formValid(f)?(cl.allPass?'box-shadow:0 3px 12px rgba(77,141,255,.3);':'box-shadow:0 3px 14px rgba(192,57,43,.4);'):'')
+        };
+      })()
+    };
+  }
+
+  routineTemplate(){
+    return [
+      ['Pre-market preparation', [
+        ['p1','Mark daily & 4H support / resistance levels'],
+        ['p2','Confirm ADX regime is tradeable (≥ '+this.state.settings.adxWeak+')'],
+        ['p3','Note DI+ / DI− directional bias'],
+        ['p4','Define session focus — London or New York'],
+        ['p5','Set max trades & daily loss limit for the day']
+      ]],
+      ['LVRS entry checklist', [
+        ['e1','Price is at a marked S/R level'],
+        ['e2','Pullback (or pullback + breakout) is confirmed'],
+        ['e3','Level + buffer break actually happened'],
+        ['e4','ADX direction aligns with trade direction'],
+        ['e5','RSI condition met (over buy/sell or breaking S/R)']
+      ]],
+      ['Risk & trade management', [
+        ['r1','Risk ≤ setup allocation (0.5% std / 1% PB+break)'],
+        ['r2','Stop loss placed (ATR-based or before opening candle)'],
+        ['r3','TP plan taken from the LVRS suggestion'],
+        ['r4','BE-at-1R rule armed']
+      ]],
+      ['Mindset', [
+        ['k1','Calm, rested and focused'],
+        ['k2','No FOMO, no revenge trading'],
+        ['k3','Trading the plan — not the P&L'],
+        ['k4','Accepted the loss before entering']
+      ]]
+    ];
+  }
+
+  routineData(){
+    const checks=this.state.routineChecks;
+    const tmpl=this.routineTemplate();
+    let total=0, done=0;
+    const sections=tmpl.map(([title,items])=>({
+      title,
+      items:items.map(([id,label])=>{
+        total++; const checked=!!checks[id]; if(checked)done++;
+        return { id, label, checked,
+          onToggle:()=>this.setState(s=>({routineChecks:{...s.routineChecks,[id]:!s.routineChecks[id]}})),
+          boxStyle:'width:18px; height:18px; flex-shrink:0; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; border:1.5px solid '+(checked?'#4d8dff':'#313c52')+'; background:'+(checked?'#4d8dff':'transparent')+'; transition:all .15s;',
+          mark:checked?'✓':'',
+          labelStyle:'font-size:13px; color:'+(checked?'#9aa3b8':'#cdd6ea')+'; text-decoration:'+(checked?'line-through':'none')+'; transition:color .15s;' };
+      })
+    }));
+    const pct=Math.round(done/total*100);
+    return { routineSections:sections, routineDone:done, routineTotal:total, routinePct:pct,
+      routinePctLabel:pct+'%',
+      routineRing:this.ring(pct),
+      onReflection:(e)=>this.setState({routineReflection:e.target.value}),
+      reflectionValue:this.state.routineReflection,
+      routineReady: done>=total-2 };
+  }
+
+  ring(pct){
+    const r=46, c=2*Math.PI*r, off=c*(1-pct/100);
+    return React.createElement('svg',{viewBox:'0 0 120 120',width:128,height:128,style:{display:'block'}},
+      React.createElement('circle',{cx:60,cy:60,r:r,fill:'none',stroke:'#1b2230',strokeWidth:9}),
+      React.createElement('circle',{cx:60,cy:60,r:r,fill:'none',stroke:'#4d8dff',strokeWidth:9,strokeLinecap:'round',strokeDasharray:c,strokeDashoffset:off,transform:'rotate(-90 60 60)',style:{transition:'stroke-dashoffset .5s ease'}}),
+      React.createElement('text',{x:60,y:58,textAnchor:'middle',fill:'#e6e9f0',fontSize:24,fontWeight:600,fontFamily:'IBM Plex Mono, monospace'},pct+'%'),
+      React.createElement('text',{x:60,y:76,textAnchor:'middle',fill:'#5a6378',fontSize:10,fontFamily:'IBM Plex Sans, sans-serif'},'ready'));
+  }
+
+  // ── seed data (from LVRS Excel) ──────────────────────────────
+  seed(){
+    // [date, hour, day, dir, bias, type(S/P), entry, sr, sl, adxDir, adx, diP, diM, rsi, strong, maxR, mental[], note, shot]
+    const D = (date,hour,day,dir,bias,type,entry,sr,sl,adxDir,adx,diP,diM,rsi,strong,maxR,mental,note,shot)=>(
+      {date,hour,day,dir,bias,type,entry,sr,sl,adxDir,adx,diP,diM,rsi,strong,maxR,mental,note,shot});
+    return [
+      D('28 May','05:00','Wed','Sell','Bearish','P',1.16161,1.16241,1.16203,'Upward',36,11,31,'breaking S/R',true,6,['Calm','Focused'],'Clean break + retest at the level. Runner ran to TP3.',true),
+      D('28 May','15:45','Wed','Buy','Bullish','P',1.16241,1.16036,1.16189,'Upward',17,34,15,'breaking S/R',true,6,['Confident','Disciplined'],'London continuation. Strong DI spread.',true),
+      D('28 May','23:30','Wed','Buy','Neutral','S',1.16500,1.16448,1.16446,'Downward',38,24,13,'breaking SMA',false,1,['Anxious'],'Counter-bias scalp, only reached 1R then pulled back to BE.',false),
+      D('29 May','11:00','Thu','Sell','Bearish','S',1.16434,1.16571,1.16478,'Downward',23,21,29,'breaking SMA',false,4,['Calm','Patient'],'Textbook pullback short into resistance.',true),
+      D('02 Jun','08:00','Mon','Buy','Bullish','P',1.15820,1.15910,1.15760,'Upward',14,19,18,'entering over buy/sell',false,0,['Greedy','Impatient'],'FOMO entry before the open candle confirmed. Stopped immediately.',false),
+      D('02 Jun','09:30','Mon','Sell','Bearish','S',1.15940,1.16010,1.15988,'Downward',27,16,28,'breaking S/R',false,2,['Focused'],'Patient short, hit 2R target cleanly.',true),
+      D('03 Jun','09:00','Tue','Buy','Bullish','P',1.16120,1.15980,1.16070,'Upward',31,30,14,'breaking S/R',true,3,['Disciplined'],'Runner failed, closed remainder at TP1 (3R).',false),
+      D('04 Jun','11:45','Wed','Sell','Neutral','S',1.16380,1.16450,1.16420,'Flat',18,20,22,'breaking SMA',false,0,['Tired','Frustrated'],'Chop, no business trading a flat ADX regime.',false),
+      D('04 Jun','12:45','Wed','Buy','Bullish','P',1.16210,1.16060,1.16150,'Upward',34,33,12,'breaking S/R',true,6,['Confident','Calm'],'A+ setup. Full runner to TP2.',true),
+      D('05 Jun','17:00','Thu','Sell','Bearish','S',1.16640,1.16720,1.16695,'Downward',22,18,25,'breaking SMA',false,1,['Anxious'],'NY session fade, BE only.',false),
+      D('08 Jun','14:30','Sun','Buy','Bullish','P',1.16050,1.15920,1.16000,'Upward',26,28,17,'breaking S/R',false,4,['Focused','Patient'],'Solid TP1 hit, no runner conditions.',true),
+      D('11 Jun','17:30','Wed','Sell','Bearish','S',1.16890,1.16980,1.16955,'Downward',29,15,30,'breaking SMA',false,4,['Calm'],'Reached TP3 if there were no BE-at-1R rule.',true),
+      D('12 Jun','15:30','Thu','Buy','Bullish','P',1.16330,1.16190,1.16270,'Upward',37,35,11,'breaking S/R',true,6,['Confident','Disciplined'],'Reached TP3 easily, runner banked.',true),
+      D('15 Jun','18:45','Sun','Sell','Neutral','S',1.16710,1.16780,1.16752,'Flat',16,21,23,'breaking SMA',false,0,['Impatient','Frustrated'],'Level + buffer break had not happened — entry not per strategy. Hit SL then ran to 4R.',false),
+      D('17 Jun','10:00','Tue','Buy','Bullish','P',1.16180,1.16040,1.16120,'Upward',28,29,16,'breaking S/R',false,4,['Focused'],'Clean London long, TP1 banked.',true),
+      D('18 Jun','18:30','Wed','Sell','Bearish','P',1.16920,1.17010,1.16965,'Downward',33,13,33,'breaking S/R',true,6,['Greedy','Anxious'],'FOMO at the wrong hour — got lucky, full runner anyway. Process > outcome.',false),
+      D('23 Jun','08:15','Mon','Buy','Bullish','S',1.15760,1.15690,1.15715,'Upward',24,26,19,'breaking SMA',false,2,['Calm','Patient'],'Disciplined open, 2R banked.',true),
+      D('23 Jun','13:45','Mon','Sell','Neutral','S',1.15880,1.15950,1.15922,'Flat',17,22,24,'breaking SMA',false,0,['Tired'],'Forced a trade in a dead session. Loss.',false)
+    ];
+  }
+
+  // ── LVRS simulation ──────────────────────────────────────────
+  enrich(){
+    const s = this.state.settings;
+    let equity = s.initialEquity, peak = equity;
+    const out = [];
+    this.state.trades.forEach((t,i)=>{
+      const isStd = t.type==='S';
+      const riskPct = isStd ? s.stdRisk : s.pbRisk;
+      const riskUSD = equity * riskPct;
+      const baseTP = isStd ? s.stdTP : s.pbTP1;
+      const dist = Math.abs(t.entry - t.sr);
+      const distPct = (dist / t.entry) * 100;
+      let plan;
+      if(isStd) plan = 'Standard · TP ' + s.stdTP + 'R';
+      else if(t.strong) plan = 'PB+Break · TP1 ' + s.pbTP1 + 'R → runner ' + s.runnerTP2 + 'R ('+Math.round(s.runnerPct*100)+'%)';
+      else plan = 'PB+Break · TP ' + s.pbTP1 + 'R';
+      const plannedWR = (!isStd && t.strong) ? (s.runnerPct*s.runnerTP2 + (1-s.runnerPct)*s.pbTP1) : baseTP;
+      // BE-at-1R simulation — open trades (no max-R yet) don't affect equity
+      const open = (t.maxR===null || t.maxR===undefined || t.maxR==='' || isNaN(t.maxR));
+      let exitR=null, result='Open', pnl=0;
+      if(!open){
+        if(t.maxR < s.beAtR){ exitR = -1; result = 'Loss'; }
+        else if(t.maxR < baseTP){ exitR = 0; result = 'BE'; }
+        else {
+          result = 'Win';
+          if(isStd) exitR = s.stdTP;
+          else if(!t.strong) exitR = s.pbTP1;
+          else exitR = (t.maxR >= s.runnerTP2) ? (s.runnerPct*s.runnerTP2 + (1-s.runnerPct)*s.pbTP1) : s.pbTP1;
+        }
+        pnl = exitR * riskUSD;
+        equity += pnl;
+      }
+      peak = Math.max(peak, equity);
+      const dd = equity - peak;
+      out.push({...t, id:i, symbol:t.symbol||'EURUSD', slType:t.slType||(i%4===0?'BOC (before opening candle)':'ATR based'), isStd, riskPct, riskUSD, baseTP, dist, distPct, plan, plannedWR, open,
+        exitR, result, pnl, equity, peak, dd, diDiff:Math.abs(t.diP - t.diM),
+        regime: t.adx < s.adxWeak ? 'Weak' : t.adx < s.adxBuilding ? 'Building' : t.adx < s.adxHealthy ? 'Healthy' : 'Strong',
+        checklist: this.evaluateChecklist(t) });
+    });
+    return out;
+  }
+
+  metrics(){
+    const tr = this.enrich(); const s = this.state.settings;
+    const closed = tr.filter(t=>!t.open);
+    const openCount = tr.length - closed.length;
+    const wins = closed.filter(t=>t.result==='Win'), losses = closed.filter(t=>t.result==='Loss'), bes = closed.filter(t=>t.result==='BE');
+    const net = tr.reduce((a,t)=>a+t.pnl,0);
+    const endEq = s.initialEquity + net;
+    const grossW = wins.reduce((a,t)=>a+t.pnl,0), grossL = Math.abs(losses.reduce((a,t)=>a+t.pnl,0));
+    const pf = grossL ? grossW/grossL : grossW>0 ? 99 : 0;
+    const exp = closed.length ? closed.reduce((a,t)=>a+t.exitR,0)/closed.length : 0;
+    const decided = wins.length + losses.length;
+    const winRate = decided ? wins.length/decided*100 : 0;
+    let maxDD = 0; tr.forEach(t=>{ maxDD = Math.min(maxDD, t.dd); });
+    const maxDDpct = Math.abs(maxDD)/ (s.initialEquity) *100;
+    const avgWin = wins.length ? grossW/wins.length : 0;
+    const avgLoss = losses.length ? grossL/losses.length : 0;
+    return { tr, wins:wins.length, losses:losses.length, bes:bes.length, net, endEq, pf, exp, winRate, maxDD, maxDDpct, avgWin, avgLoss, total:closed.length, allCount:tr.length, openCount };
+  }
+
+  // ── helpers ──────────────────────────────────────────────────
+  money(n){ const a=Math.abs(n); const str='$'+a.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); return (n<0?'−':'')+str; }
+  money2(n){ const a=Math.abs(n); const str='$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); return (n<0?'−':'')+str; }
+  rfmt(n){ return (n>0?'+':n<0?'−':'')+Math.abs(n).toFixed(2)+'R'; }
+  pct(n){ return (n>0?'+':n<0?'−':'')+Math.abs(n).toFixed(1)+'%'; }
+  resStyle(r){
+    const c = r==='Win'?['#3fd09a','rgba(63,208,154,.13)']:r==='Loss'?['#f06a6a','rgba(240,106,106,.13)']:r==='Open'?['#4d8dff','rgba(77,141,255,.14)']:['#d6a85b','rgba(214,168,91,.13)'];
+    return 'display:inline-block; padding:2px 9px; border-radius:5px; font-size:10.5px; font-weight:600; color:'+c[0]+'; background:'+c[1]+';';
+  }
+  dirStyle(d){
+    const c = d==='Buy'?['#3fd09a','rgba(63,208,154,.1)']:['#f06a6a','rgba(240,106,106,.1)'];
+    return 'display:inline-block; padding:2px 9px; border-radius:5px; font-size:10.5px; font-weight:600; color:'+c[0]+'; background:'+c[1]+';';
+  }
+
+  // ── equity chart (SVG) ───────────────────────────────────────
+  equityChart(tr){
+    const W=720, H=210, pad=8;
+    const eqs=[this.state.settings.initialEquity, ...tr.map(t=>t.equity)];
+    const min=Math.min(...eqs), max=Math.max(...eqs), range=(max-min)||1;
+    const x=i=>pad + i*(W-2*pad)/(eqs.length-1);
+    const y=v=>H-22 - (v-min)/range*(H-40);
+    const pts=eqs.map((v,i)=>[x(i),y(v)]);
+    const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const area=line+' L'+x(eqs.length-1).toFixed(1)+' '+(H-22)+' L'+pad+' '+(H-22)+' Z';
+    const grid=[0,.25,.5,.75,1].map(f=>{ const yy=(H-40)*f+18; return React.createElement('line',{key:f,x1:pad,x2:W-pad,y1:yy,y2:yy,stroke:'#161c28',strokeWidth:1}); });
+    const dots=pts.map((p,i)=>i===pts.length-1?React.createElement('circle',{key:i,cx:p[0],cy:p[1],r:4,fill:'#4d8dff',stroke:'#0f1421',strokeWidth:2}):null);
+    return React.createElement('svg',{viewBox:'0 0 '+W+' '+H,style:{width:'100%',height:'auto',display:'block'},preserveAspectRatio:'none'},
+      React.createElement('defs',null,
+        React.createElement('linearGradient',{id:'eqg',x1:0,y1:0,x2:0,y2:1},
+          React.createElement('stop',{offset:'0%',stopColor:'#4d8dff',stopOpacity:.28}),
+          React.createElement('stop',{offset:'100%',stopColor:'#4d8dff',stopOpacity:0}))),
+      grid,
+      React.createElement('path',{d:area,fill:'url(#eqg)'}),
+      React.createElement('path',{d:line,fill:'none',stroke:'#4d8dff',strokeWidth:2.2,strokeLinejoin:'round',strokeLinecap:'round',style:{strokeDasharray:2000,animation:'drawIn 1.1s ease both'}}),
+      dots);
+  }
+
+  // ── nav ──────────────────────────────────────────────────────
+  icon(name,color){
+    const c=color, sw=1.7;
+    const P=(d)=>React.createElement('path',{d,fill:'none',stroke:c,strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round'});
+    const kids={
+      dashboard:[React.createElement('rect',{key:1,x:2.5,y:2.5,width:6,height:6,rx:1.5,fill:'none',stroke:c,strokeWidth:sw}),React.createElement('rect',{key:2,x:11.5,y:2.5,width:6,height:9,rx:1.5,fill:'none',stroke:c,strokeWidth:sw}),React.createElement('rect',{key:3,x:2.5,y:11.5,width:6,height:6,rx:1.5,fill:'none',stroke:c,strokeWidth:sw}),React.createElement('rect',{key:4,x:11.5,y:14.5,width:6,height:3,rx:1.5,fill:'none',stroke:c,strokeWidth:sw})],
+      routine:[P('M7 5h9'),P('M7 10h9'),P('M7 15h9'),P('M3 5l1 1 1.5-1.5'),P('M3 10l1 1 1.5-1.5'),P('M3 15l1 1 1.5-1.5')],
+      trades:[P('M3 16V8'),P('M8 16V4'),P('M13 16v-6'),P('M17 16V6')],
+      calendar:[React.createElement('rect',{key:1,x:2.5,y:3.5,width:15,height:14,rx:2,fill:'none',stroke:c,strokeWidth:sw}),P('M2.5 7.5h15'),P('M6.5 2v3'),P('M13.5 2v3')],
+      analytics:[React.createElement('circle',{key:1,cx:10,cy:10,r:7.5,fill:'none',stroke:c,strokeWidth:sw}),P('M10 10V3.5'),P('M10 10l5 3')],
+      settings:[P('M3 6h8'),P('M15 6h2'),P('M3 14h2'),P('M9 14h8'),React.createElement('circle',{key:1,cx:13,cy:6,r:2,fill:'none',stroke:c,strokeWidth:sw}),React.createElement('circle',{key:2,cx:7,cy:14,r:2,fill:'none',stroke:c,strokeWidth:sw})]
+    };
+    return React.createElement('svg',{viewBox:'0 0 20 20',width:17,height:17,style:{display:'block'}},kids[name]);
+  }
+
+  navItems(){
+    const items=[['dashboard','Dashboard'],['routine','Routine'],['trades','Trade Log'],['calendar','Calendar'],['analytics','Analytics'],['settings','Settings']];
+    const m=this.metrics();
+    const badges={trades:m.allCount};
+    return items.map(([id,label])=>{
+      const active=this.state.view===id;
+      const col=active?'#cdd6ea':'#8b94a8';
+      return { id, label, badge:badges[id]||'', icon:this.icon(id,col),
+        iconWrap:'display:flex; align-items:center; justify-content:center; width:18px;',
+        onClick:()=>this.setState({view:id, selectedId:null}),
+        rowStyle:'display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:'+(active?'600':'500')+'; color:'+col+'; background:'+(active?'#172033':'transparent')+'; transition:background .15s;' };
+    });
+  }
+
+  settingsMeta(){
+    return [
+      ['Account',[['initialEquity','Initial equity','Starting balance for risk & equity calculations','$',1,500,1000]]],
+      ['Risk allocation',[
+        ['stdRisk','Standard pullback risk','Auto-applied to Standard pullback setups','%',100,0.1,0.1],
+        ['pbRisk','Pullback + breakout risk','Auto-applied to Pullback + Breakout setups','%',100,0.1,0.1]]],
+      ['Take-profit targets',[
+        ['stdTP','Standard base TP','Suggested TP for Standard pullback','R',1,0.5,0.5],
+        ['pbTP1','PB+Break base TP / TP1','Base TP and failed-runner close level','R',1,0.5,0.5],
+        ['runnerTP2','Strong runner TP2','Runner target when strong filters are true','R',1,0.5,1],
+        ['runnerPct','Runner position','Share of position assigned to the TP2 runner','%',100,5,0]]],
+      ['Break-even rule',[
+        ['beAtR','Move SL to break-even at','Below this R the result is −1R; at/above but under TP it is 0R','R',1,0.5,0]]],
+      ['ADX regime & strong filter',[
+        ['adxWeak','Weak below','ADX under this value is a weak regime','',1,1,1],
+        ['adxBuilding','Building below','ADX under this value is building','',1,1,1],
+        ['adxHealthy','Healthy below','ADX under this is healthy; above is strong','',1,1,1],
+        ['strongDIDiff','Strong DI difference min','Minimum DI spread for a strong PB+Break','',1,1,1]]]
+    ];
+  }
+
+  settingsData(){
+    const s=this.state.settings;
+    const fmt=(v,mult)=> mult===100 ? +(v*100).toFixed(2) : v;
+    const groups=this.settingsMeta().map(([sec,items])=>({
+      sec,
+      items:items.map(([k,label,desc,unit,mult,step,min])=>({
+        label, desc, unit,
+        inputValue:fmt(s[k],mult),
+        step, min,
+        onInput:(e)=>{let val=parseFloat(e.target.value); if(isNaN(val))return; val=mult===100?val/100:val; this.setState(st=>({settings:{...st.settings,[k]:val}}));}
+      }))
+    }));
+    const m=this.metrics();
+    return { settingsGroups:groups,
+      settingsImpact:[
+        {label:'End equity', value:this.money2(m.endEq), color:m.net>=0?'#3fd09a':'#f06a6a'},
+        {label:'Net P&L', value:this.money(m.net), color:m.net>=0?'#3fd09a':'#f06a6a'},
+        {label:'Expectancy', value:this.rfmt(m.exp), color:'#4d8dff'},
+        {label:'Win rate', value:m.winRate.toFixed(0)+'%', color:'#e6e9f0'}
+      ],
+      onResetSettings:()=>this.setState({settings:{initialEquity:10000,stdRisk:0.005,pbRisk:0.01,stdTP:2,pbTP1:3,runnerTP2:6,runnerPct:0.3,adxWeak:20,adxBuilding:25,adxHealthy:40,strongDIDiff:15,beAtR:1}})
+    };
+  }
+
+  analyticsData(){
+    const tr=this.enrich().filter(t=>!t.open);
+    const agg=(g)=>{const w=g.filter(t=>t.result==='Win').length,l=g.filter(t=>t.result==='Loss').length;const pnl=g.reduce((a,t)=>a+t.pnl,0);const exp=g.length?g.reduce((a,t)=>a+t.exitR,0)/g.length:0;const gw=g.filter(t=>t.pnl>0).reduce((a,t)=>a+t.pnl,0);const gl=Math.abs(g.filter(t=>t.pnl<0).reduce((a,t)=>a+t.pnl,0));return {n:g.length,w,l,winrate:(w+l?Math.round(w/(w+l)*100):0),pnl,exp,pf:gl?gw/gl:gw>0?99:0};};
+
+    // by setup
+    const setups=[['Standard pullback',tr.filter(t=>t.isStd)],['Pullback + Breakout',tr.filter(t=>!t.isStd)]].map(([name,g])=>{const a=agg(g);return {name, n:a.n, winrate:a.winrate+'%', pnl:this.money(a.pnl), pnlColor:a.pnl>=0?'#3fd09a':'#f06a6a', exp:this.rfmt(a.exp), pf:a.pf.toFixed(2)};});
+
+    // by regime
+    const regimes=['Weak','Building','Healthy','Strong'];
+    const regRaw=regimes.map(r=>({name:r, ...agg(tr.filter(t=>t.regime===r))})).filter(r=>r.n>0);
+    const regMax=Math.max(1,...regRaw.map(r=>Math.abs(r.exp)));
+    const byRegime=regRaw.map(r=>({name:r.name, n:r.n+' trades', exp:this.rfmt(r.exp), expColor:r.exp>=0?'#3fd09a':'#f06a6a', barW:(Math.abs(r.exp)/regMax*100)+'%', barColor:r.exp>=0?'#3fd09a':'#f06a6a'}));
+
+    // psychology (diverging)
+    const tags={};
+    tr.forEach(t=>t.mental.forEach(tag=>{(tags[tag]=tags[tag]||[]).push(t);}));
+    const order=Object.entries(tags).map(([tag,g])=>{const a=agg(g);return {tag, n:g.length, exp:a.exp, winrate:a.winrate};}).sort((x,y)=>y.exp-x.exp);
+    const pMax=Math.max(...order.map(o=>Math.abs(o.exp)),1);
+    const psych=order.map(o=>{const pos=o.exp>=0; const w=(Math.abs(o.exp)/pMax*49); return {tag:o.tag, n:o.n+'×', exp:this.rfmt(o.exp), winrate:o.winrate+'% win', color:pos?'#3fd09a':'#f06a6a',
+      barStyle:'position:absolute; top:5px; height:13px; border-radius:3px; background:'+(pos?'#3fd09a':'#f06a6a')+'; '+(pos?('left:50%; width:'+w+'%;'):('right:50%; width:'+w+'%;'))};});
+
+    // by day of week
+    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dRaw=dows.map(d=>({name:d, ...agg(tr.filter(t=>t.day===d))})).filter(d=>d.n>0);
+    const dMax=Math.max(1,...dRaw.map(d=>Math.abs(d.pnl)));
+    const byDay=dRaw.map(d=>({name:d.name, n:d.n, pnl:this.money(d.pnl), pnlColor:d.pnl>=0?'#3fd09a':'#f06a6a', barW:(Math.abs(d.pnl)/dMax*100)+'%', barColor:d.pnl>=0?'#3fd09a':'#f06a6a'}));
+
+    return { anSetups:setups, anRegime:byRegime, anPsych:psych, anDay:byDay,
+      anLeadInsight:'Discipline pays. Trades tagged Calm, Disciplined or Focused carry strongly positive expectancy; Greedy, Impatient and Tired states are where the account bleeds.' };
+  }
+
+  calendarData(){
+    const all=this.enrich();
+    const monthMap={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6};
+    const m=this.state.calMonth; // 4=May,5=June
+    const monthNames=['January','February','March','April','May','June'];
+    const daysIn=new Date(2026,m+1,0).getDate();
+    const firstW=new Date(2026,m,1).getDay();
+    // aggregate by day
+    const byDay={};
+    all.forEach(t=>{const parts=t.date.split(' '); const dd=parseInt(parts[0]); const mm=monthMap[parts[1]]; if(mm===m){ (byDay[dd]=byDay[dd]||{pnl:0,n:0,r:0,w:0,l:0}); byDay[dd].pnl+=t.pnl; byDay[dd].n++; byDay[dd].r+=t.exitR; if(t.result==='Win')byDay[dd].w++; if(t.result==='Loss')byDay[dd].l++; }});
+    const maxAbs=Math.max(1,...Object.values(byDay).map(d=>Math.abs(d.pnl)));
+    const cell=(day)=>{
+      const d=byDay[day];
+      if(!d) return {day, has:false, bg:'#0c1019', pnl:'', n:'', textColor:'#3a4256', border:'#141a26'};
+      const pos=d.pnl>=0, inten=0.1+0.55*Math.abs(d.pnl)/maxAbs;
+      const base=pos?'63,208,154':'240,106,106';
+      return {day, has:true, bg:'rgba('+base+','+inten.toFixed(2)+')', border:'rgba('+base+',.4)',
+        pnl:this.money(d.pnl), n:d.n+(d.n>1?' trades':' trade'), textColor:pos?'#7fe6c0':'#f79b9b', r:this.rfmt(d.r)};
+    };
+    // build cells with leading blanks, chunk to weeks
+    const seq=[]; for(let i=0;i<firstW;i++)seq.push(null); for(let day=1;day<=daysIn;day++)seq.push(cell(day));
+    while(seq.length%7)seq.push(null);
+    const weeks=[]; for(let i=0;i<seq.length;i+=7){const wk=seq.slice(i,i+7); const tot=wk.reduce((a,c)=>a+(c&&c.has?(byDay[c.day].pnl):0),0); const has=wk.some(c=>c&&c.has);
+      weeks.push({days:wk.map(c=>c||{day:'',has:false,bg:'transparent',border:'transparent',pnl:'',n:'',textColor:'#3a4256'}), total:has?this.money(tot):'', totalColor:tot>=0?'#3fd09a':'#f06a6a'});}
+    // stats
+    const days=Object.entries(byDay).map(([d,v])=>({d:+d,...v}));
+    const monthPnl=days.reduce((a,d)=>a+d.pnl,0);
+    const winDays=days.filter(d=>d.pnl>0).length, lossDays=days.filter(d=>d.pnl<0).length;
+    const best=days.slice().sort((a,b)=>b.pnl-a.pnl)[0], worst=days.slice().sort((a,b)=>a.pnl-b.pnl)[0];
+    const tradeCount=days.reduce((a,d)=>a+d.n,0);
+    return {
+      calWeeks:weeks, calMonthLabel:monthNames[m]+' 2026',
+      calPrev:()=>this.setState({calMonth:Math.max(4,m-1)}), calNext:()=>this.setState({calMonth:Math.min(5,m+1)}),
+      calStats:[
+        {label:'Month P&L', value:this.money(monthPnl), color:monthPnl>=0?'#3fd09a':'#f06a6a'},
+        {label:'Trading days', value:String(days.length), color:'#e6e9f0'},
+        {label:'Green / red days', value:winDays+' / '+lossDays, color:'#e6e9f0'},
+        {label:'Trades', value:String(tradeCount), color:'#e6e9f0'}
+      ],
+      calBest: best?{label:'Best day', value:'Jun '+best.d, pnl:this.money(best.pnl), color:'#3fd09a'}:null,
+      calWorst: worst?{label:'Worst day', value:'Jun '+worst.d, pnl:this.money(worst.pnl), color:'#f06a6a'}:null,
+      calHasBest: !!best && this.state.calMonth===5
+    };
+  }
+
+  // real Date for a trade (dataset year 2026)
+  tradeDate(t){
+    const MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    const p=String(t.date||'').split(' '); const d=parseInt(p[0])||1; const mon=MON[p[1]]??0;
+    const hm=String(t.hour||'09:00').split(':'); return new Date(2026, mon, d, +hm[0]||0, +hm[1]||0);
+  }
+  // start of ISO week (Monday) for a date
+  weekStart(dt){ const x=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()); const wd=(x.getDay()+6)%7; x.setDate(x.getDate()-wd); return x; }
+
+  tradesData(){
+    const all=this.enrich();
+    const fr=this.state.filterResult, ft=this.state.filterType, frg=this.state.filterRange, fsym=this.state.filterSym;
+    // anchor “now” to the latest trade so ranges are meaningful for the dataset
+    const anchor = all.length ? all.reduce((mx,t)=>{ const d=this.tradeDate(t); return d>mx?d:mx; }, this.tradeDate(all[0])) : new Date(2026,5,24);
+    const today0 = new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate());
+    const wkStart = this.weekStart(anchor);
+    const moStart = new Date(anchor.getFullYear(),anchor.getMonth(),1);
+    const d30 = new Date(today0); d30.setDate(d30.getDate()-29);
+    const d7 = new Date(today0); d7.setDate(d7.getDate()-6);
+    const inRange=(t)=>{ if(frg==='all')return true; const d=this.tradeDate(t);
+      if(frg==='today') return d>=today0;
+      if(frg==='week')  return d>=wkStart;
+      if(frg==='7d')    return d>=d7;
+      if(frg==='month') return d>=moStart;
+      if(frg==='30d')   return d>=d30;
+      return true; };
+    const syms=['all',...Array.from(new Set(all.map(t=>t.symbol||'EURUSD')))];
+    let rows=all.filter(t=> (fr==='all'||t.result===fr) && (ft==='all'|| t.type===ft) && (fsym==='all'||(t.symbol||'EURUSD')===fsym) && inRange(t));
+    const chip=(active)=>'padding:6px 13px; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer; border:1px solid '+(active?'#2e3850':'#1b2230')+'; background:'+(active?'#172033':'transparent')+'; color:'+(active?'#cdd6ea':'#8b94a8')+';';
+    const resultFilters=[['all','All'],['Open','Open'],['Win','Wins'],['Loss','Losses'],['BE','Break-even']].map(([k,l])=>({label:l, onClick:()=>this.setState({filterResult:k}), style:chip(fr===k)}));
+    const typeFilters=[['all','All setups'],['S','Standard'],['P','PB+Break']].map(([k,l])=>({label:l, onClick:()=>this.setState({filterType:k}), style:chip(ft===k)}));
+    const rangeFilters=[['all','All time'],['today','Today'],['week','This week'],['7d','Last 7d'],['month','This month'],['30d','Last 30d']].map(([k,l])=>({label:l, onClick:()=>this.setState({filterRange:k}), style:chip(frg===k)}));
+    const symFilters=syms.map(k=>({label:k==='all'?'All pairs':k, onClick:()=>this.setState({filterSym:k}), style:chip(fsym===k)}));
+    const showSymFilter = syms.length>2;
+    // summary of the current filtered selection
+    const closed=rows.filter(t=>!t.open); const w=closed.filter(t=>t.result==='Win').length, l=closed.filter(t=>t.result==='Loss').length;
+    const netSel=rows.reduce((a,t)=>a+(t.open?0:t.pnl),0); const decided=w+l;
+    const filtersActive = fr!=='all'||ft!=='all'||frg!=='all'||fsym!=='all';
+    const selSummary={
+      count:rows.length, net:this.money(netSel), netColor:netSel>=0?'#3fd09a':'#f06a6a',
+      wr:decided?Math.round(w/decided*100)+'%':'—',
+      label:({all:'All time',today:'Today',week:'This week','7d':'Last 7 days',month:'This month','30d':'Last 30 days'})[frg],
+      filtersActive, onClear:()=>this.setState({filterResult:'all',filterType:'all',filterRange:'all',filterSym:'all'})
+    };
+
+    const tradeRows=[...rows].reverse().map(t=>({
+      id:t.id, num:('0'+(t.id+1)).slice(-2), date:t.date, hour:t.hour, day:t.day, symbol:t.symbol,
+      dir:t.dir, dirStyle:this.dirStyle(t.dir), setup:t.isStd?'Standard':'PB+Break',
+      entry:t.entry.toFixed(5), sl:t.sl.toFixed(5), risk:this.money(t.riskUSD), riskPct:(t.riskPct*100).toFixed(1)+'%',
+      adx:t.adxDir.slice(0,4)+' '+t.adx, regime:t.regime, regimeColor:t.regime==='Strong'||t.regime==='Healthy'?'#3fd09a':t.regime==='Building'?'#d6a85b':'#f06a6a',
+      rsi:t.rsi.replace('breaking ','brk ').replace('entering over ','ent ').replace('exiting over ','exit '),
+      maxR:t.open?'—':t.maxR.toFixed(0)+'R', exitR:t.open?'—':this.rfmt(t.exitR), exitColor:t.open?'#7e8aa0':t.exitR>0?'#3fd09a':t.exitR<0?'#f06a6a':'#d6a85b',
+      result:t.result, resultStyle:this.resStyle(t.result),
+      pnl:t.open?'—':this.money(t.pnl), pnlColor:t.open?'#7e8aa0':t.pnl>0?'#3fd09a':t.pnl<0?'#f06a6a':'#9aa3b8',
+      strong:t.strong, mentalFirst:t.mental[0]||'',
+      rowStyle:'display:grid; grid-template-columns:30px 86px 60px 82px 76px 76px 62px 68px 64px 60px 42px 60px 66px 72px; column-gap:7px; align-items:center; padding:9px 16px; border-top:1px solid #161c28; cursor:pointer; font-size:11.5px;'+(this.state.selectedId===t.id?'background:#11192a;':''),
+      onClick:()=>this.setState({selectedId:t.id})
+    }));
+
+    const sel=this.state.selectedId!=null?all.find(t=>t.id===this.state.selectedId):null;
+    let drawer=null;
+    if(sel){
+      const row=(label,value,color)=>({label,value,color:color||'#cdd6ea'});
+      drawer={
+        symbol:sel.symbol, when:sel.date+' '+sel.hour+' · '+sel.day, dir:sel.dir, dirStyle:this.dirStyle(sel.dir),
+        result:sel.result, resultStyle:this.resStyle(sel.result),
+        pnl:sel.open?(this.rfmt(sel.plannedWR)+' target'):this.money2(sel.pnl), pnlColor:sel.open?'#4d8dff':sel.pnl>0?'#3fd09a':sel.pnl<0?'#f06a6a':'#9aa3b8',
+        onClose:()=>this.setState({selectedId:null}),
+        onEdit:()=>this.editTrade(sel.id), onDelete:()=>this.deleteTrade(sel.id),
+        plan:sel.plan, open:sel.open,
+        hasViolations: sel.checklist.failCount>0, violationCount: sel.checklist.failCount,
+        violationBadge:'display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:5px;font-size:10.5px;font-weight:600;color:#ff8a8a;background:rgba(192,57,43,.16);',
+        chkRows: sel.checklist.conditions.map(c=>({label:c.label, detail:c.detail, ok:c.ok,
+          icon:c.ok?'✓':'✕', iconStyle:'width:17px;height:17px;flex:0 0 auto;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;background:'+(c.ok?'#1f8a5b':'#c0392b')+';',
+          rowStyle:'display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #141a26;',
+          labelStyle:'flex:1;font-size:11.5px;color:'+(c.ok?'#cdd6ea':'#f0a0a0')+';',
+          detailStyle:'font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;color:'+(c.ok?'#7e8aa0':'#e08a8a')+';'})),
+        chkSetupName: sel.isStd?'Standard Pullback':'Pullback & Breakout',
+        chkBannerStyle:'display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;margin-bottom:6px;font-size:12px;font-weight:600;border:1px solid '+(sel.checklist.allPass?'#1f5d40':'#7a2230')+';background:'+(sel.checklist.allPass?'#0e2017':'#241015')+';color:'+(sel.checklist.allPass?'#6fe0b0':'#ff8a8a')+';',
+        chkBannerIcon: sel.checklist.allPass?'✓':'⚠',
+        chkBannerText: sel.checklist.allPass?'All entry conditions met':(sel.checklist.failCount+' condition'+(sel.checklist.failCount>1?'s':'')+' not met at entry'),
+        onCloseTrade:(e)=>{const v=e.target.value; if(v!==''&&!isNaN(parseFloat(v)))this.closeTrade(sel.id,parseFloat(v));},
+        sections:[
+          {title:'Entry', rows:[
+            row('Entry price', sel.entry.toFixed(5)), row('S/R level', sel.sr.toFixed(5)),
+            row('Distance from S/R', sel.dist.toFixed(5)), row('Distance %', sel.distPct.toFixed(3)+'%'),
+            row('Stop loss', sel.sl.toFixed(5)), row('SL type', sel.slType),
+            row('Confirmation candle', sel.isStd ? (sel.candle||'—') : 'n/a (PB+Break)'),
+            row('Risk %', (sel.riskPct*100).toFixed(2)+'%', '#9aa3b8'), row('Risk $', this.money2(sel.riskUSD), '#9aa3b8'),
+            row('Market bias', sel.bias)
+          ]},
+          {title:'Indicators', rows:[
+            row('ADX direction', sel.adxDir), row('ADX number', String(sel.adx)),
+            row('ADX regime', sel.regime, sel.regime==='Strong'||sel.regime==='Healthy'?'#3fd09a':sel.regime==='Building'?'#d6a85b':'#f06a6a'),
+            row('DI+ / DI−', sel.diP+' / '+sel.diM), row('DI difference', String(sel.diDiff)),
+            row('RSI condition', sel.rsi), row('Strong PB+Break?', sel.strong?'Yes':'No', sel.strong?'#3fd09a':'#8b94a8')
+          ]},
+          {title:'TP plan & result (BE-at-1R)', rows: sel.open ? [
+            row('Suggested TP plan', sel.plan, '#7e9bd4'),
+            row('Planned target R', sel.plannedWR.toFixed(2)+'R', '#4d8dff'),
+            row('Max TP reached', '— not closed', '#7e8aa0'),
+            row('Status', 'Open position', '#4d8dff'),
+            row('Equity', this.money2(sel.equity), '#9aa3b8')
+          ] : [
+            row('Suggested TP plan', sel.plan, '#7e9bd4'),
+            row('Planned weighted R', sel.plannedWR.toFixed(2)+'R'),
+            row('Max TP reached', sel.maxR+'R'),
+            row('Simulated exit', this.rfmt(sel.exitR), sel.exitR>0?'#3fd09a':sel.exitR<0?'#f06a6a':'#d6a85b'),
+            row('Trade result', sel.result, sel.result==='Win'?'#3fd09a':sel.result==='Loss'?'#f06a6a':'#d6a85b'),
+            row('P&L', this.money2(sel.pnl), sel.pnl>=0?'#3fd09a':'#f06a6a'),
+            row('Equity after', this.money2(sel.equity), '#9aa3b8')
+          ]}
+        ],
+        mental:sel.mental, note:sel.note, hasShot:sel.shot
+      };
+    }
+    return { tradeRows, resultFilters, typeFilters, rangeFilters, symFilters, showSymFilter, selSummary, drawer, hasDrawer:!!drawer, tradeCount:rows.length };
+  }
+
+  renderVals(){
+    const v=this.state.view, m=this.metrics(), tr=m.tr;
+    const titles={dashboard:['Dashboard','Performance overview · simulated equity'],routine:['Daily Routine','Pre-market checklist & session review'],trades:['Trade Log','LVRS journal · '+m.allCount+' trades · '+m.openCount+' open'],calendar:['Calendar','Daily P&L heatmap'],analytics:['Analytics','Edge breakdown & psychology'],settings:['Settings','LVRS TP-suggestion parameters']};
+
+    // metric cards
+    const metricCards=[
+      {label:'Net P&L', value:this.money(m.net), color:m.net>=0?'#3fd09a':'#f06a6a', sub:this.pct(m.net/this.state.settings.initialEquity*100)+' return'},
+      {label:'Win rate', value:m.winRate.toFixed(0)+'%', color:'#e6e9f0', sub:m.wins+'W · '+m.losses+'L · '+m.bes+'BE'},
+      {label:'Expectancy', value:this.rfmt(m.exp), color:'#4d8dff', sub:'per trade'},
+      {label:'Profit factor', value:m.pf.toFixed(2), color:'#e6e9f0', sub:'gross W / gross L'},
+      {label:'Max drawdown', value:this.money(m.maxDD), color:'#f06a6a', sub:'−'+m.maxDDpct.toFixed(1)+'% peak'},
+      {label:'Avg win / loss', value:(m.avgLoss?(m.avgWin/m.avgLoss).toFixed(2):'—'), color:'#e6e9f0', sub:this.money(m.avgWin)+' / '+this.money(-m.avgLoss)}
+    ];
+
+    // R distribution
+    const buckets=[['Loss (−1R)','#f06a6a',t=>t.exitR<0],['Break-even','#d6a85b',t=>t.exitR===0],['Win 2R','#3fd09a',t=>t.exitR>0&&t.exitR<3],['Win 3R','#3fd09a',t=>t.exitR>=3&&t.exitR<3.85],['Win 3.9R runner','#2ea882',t=>t.exitR>=3.85]];
+    const maxB=Math.max(1,...buckets.map(b=>tr.filter(b[2]).length));
+    const rDist=buckets.map(b=>{const c=tr.filter(b[2]).length; return {label:b[0], color:b[1], count:c, pct:(c/maxB*100)+'%'};});
+
+    // recent trades
+    const recent=[...tr].reverse().slice(0,7).map(t=>({
+      symbol:t.symbol, typeShort:t.isStd?'Standard':'PB+Break', when:t.date+' '+t.hour,
+      direction:t.dir, dirStyle:this.dirStyle(t.dir), entry:t.entry.toFixed(5),
+      result:t.result, resultStyle:this.resStyle(t.result),
+      rDisplay:t.open?'—':this.rfmt(t.exitR), rColor:t.open?'#7e8aa0':t.exitR>0?'#3fd09a':t.exitR<0?'#f06a6a':'#d6a85b',
+      pnlDisplay:t.open?'open':this.money(t.pnl), pnlColor:t.open?'#7e8aa0':t.pnl>0?'#3fd09a':t.pnl<0?'#f06a6a':'#9aa3b8',
+      onClick:()=>this.setState({view:'trades', selectedId:t.id})
+    }));
+
+    // setup performance
+    const closedTr=tr.filter(t=>!t.open);
+    const groups=[['Standard pullback',closedTr.filter(t=>t.isStd)],['Pullback + Breakout',closedTr.filter(t=>!t.isStd)]];
+    const setupPerf=groups.map(([name,g])=>{
+      const w=g.filter(t=>t.result==='Win').length, l=g.filter(t=>t.result==='Loss').length;
+      const pnl=g.reduce((a,t)=>a+t.pnl,0), exp=g.length?g.reduce((a,t)=>a+t.exitR,0)/g.length:0;
+      return {name, trades:g.length, winrate:(w+l?Math.round(w/(w+l)*100):0)+'%', exp:this.rfmt(exp), pnl:this.money(pnl), pnlColor:pnl>=0?'#3fd09a':'#f06a6a'};
+    });
+
+    return {
+      navItems:this.navItems(),
+      equityDisplay:this.money2(m.endEq), netColor:m.net>=0?'#3fd09a':'#f06a6a',
+      returnDisplay:this.pct(m.net/this.state.settings.initialEquity*100),
+      pageTitle:titles[v][0], pageSubtitle:titles[v][1],
+      topStats:[
+        {label:'Equity', value:this.money(m.endEq), color:'#e6e9f0'},
+        {label:'Net', value:this.money(m.net), color:m.net>=0?'#3fd09a':'#f06a6a'},
+        {label:'Win %', value:m.winRate.toFixed(0)+'%', color:'#e6e9f0'},
+        {label:'Exp', value:this.rfmt(m.exp), color:'#4d8dff'}
+      ],
+      onLogTrade:()=>this.setState({showForm:true, editingId:null}),
+      onImport:()=>this.triggerImport(),
+      exportOpen:!!this.state.exportOpen,
+      onToggleExport:()=>this.setState(st=>({exportOpen:!st.exportOpen})),
+      onExportXlsx:()=>this.exportFile('xlsx'), onExportCsv:()=>this.exportFile('csv'),
+      importMsg:this.state.importMsg||null, hasToast:!!this.state.importMsg,
+      toastStyle:'position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:80; display:flex; align-items:center; gap:10px; padding:13px 18px; border-radius:11px; font-size:13px; font-weight:500; font-family:\'IBM Plex Sans\',sans-serif; box-shadow:0 12px 40px rgba(0,0,0,.5); border:1px solid '+((this.state.importMsg&&this.state.importMsg.ok)?'#1f4d3a':'#4d2530')+'; background:'+((this.state.importMsg&&this.state.importMsg.ok)?'#0e2017':'#1f1014')+'; color:'+((this.state.importMsg&&this.state.importMsg.ok)?'#6fe0b0':'#f0a0a0')+';',
+      toastIcon:(this.state.importMsg&&this.state.importMsg.ok)?'✓':'⚠',
+      toastText:this.state.importMsg?this.state.importMsg.text:'',
+      isDashboard:v==='dashboard', isRoutine:v==='routine', isTrades:v==='trades', isCalendar:v==='calendar', isAnalytics:v==='analytics', isSettings:v==='settings',
+      metricCards, rDist, recentTrades:recent, setupPerf,
+      equityChart:this.equityChart(tr),
+      tradeCountLabel:m.total+' trades', netDisplay:this.money(m.net), netColor2:m.net>=0?'#3fd09a':'#f06a6a',
+      expectancyDisplay:this.rfmt(m.exp),
+      insightText:'Your edge lives in Pullback+Breakout setups. Standard pullbacks bleed expectancy when ADX regime is flat — consider skipping them below ADX '+this.state.settings.adxWeak+'.',
+      goTrades:()=>this.setState({view:'trades'}),
+      ...this.routineData(),
+      ...this.tradesData(),
+      ...this.calendarData(),
+      ...this.analyticsData(),
+      ...this.settingsData(),
+      ...this.formData()
+    };
+  }
+}
+</script>
+</body>
+</html>
